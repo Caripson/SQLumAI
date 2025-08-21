@@ -6,7 +6,7 @@ PIP ?= pip3
 .PHONY: help setup dev test fmt lint coverage clean
 
 help: ## Show common targets
-	@echo "Targets: setup, dev, test, fmt, lint, coverage, validate-rules, report-dryrun, docs-serve, integration-up, integration-up-ci, integration-down, clean"
+	@echo "Targets: setup, dev, test, fmt, lint, coverage, validate-rules, report-dryrun, docs-serve, llm-pull, integration-up, integration-up-ci, integration-down, clean"
 
 setup: ## Install dependencies across supported stacks
 	@echo "[setup] Installing dependencies (best-effort)…"
@@ -85,6 +85,16 @@ docs-serve: ## Serve MkDocs site locally if mkdocs is available
 	@if command -v mkdocs >/dev/null; then \
 		echo "[docs] Serving at http://127.0.0.1:8000"; mkdocs serve; \
 	else echo "mkdocs not installed. pip install mkdocs mkdocs-material"; fi
+
+llm-pull: ## Pre-pull Ollama model (default llama3.2)
+	@echo "[ollama] Pulling model…"
+	@MODEL=$${MODEL:-llama3.2}; \
+	if docker ps --format '{{.Names}}' | grep -q '^ollama$$'; then \
+		docker exec ollama ollama run $$MODEL -p "hi" || true; \
+		echo "[ollama] Warmed $$MODEL"; \
+	else \
+		echo "Ollama container not running. Start with 'make integration-up' first."; exit 1; \
+	fi
 
 integration-up: ## Start local integration stack (compose)
 	@echo "[compose] Starting local stack…"

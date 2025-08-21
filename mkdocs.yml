@@ -10,4 +10,5 @@ nav:
   - QA Checklist: qa-checklist.md
   - Dry-Run JSON: dryrun-json.md
   - Dry-Run Chart: dryrun-chart.md
+  - LLM Providers: llm-providers.md
 docs_dir: docs
