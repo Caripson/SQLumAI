@@ -63,7 +63,7 @@ def try_llm(prompt: str) -> str | None:
 
 
 def main():
-    date = dt.datetime.utcnow().date().isoformat()
+    date = dt.datetime.now(dt.timezone.utc).date().isoformat()
     decisions = load_decisions_for_date(date)
     profiles = {}
     if PROFILES.exists():
@@ -110,4 +110,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

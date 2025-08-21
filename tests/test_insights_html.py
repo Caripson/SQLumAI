@@ -4,7 +4,7 @@ import datetime as dt
 
 def test_insights_html_renders(tmp_path, monkeypatch):
     # Arrange: create a dummy insights report for today
-    today = dt.datetime.utcnow().date().isoformat()
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
     reports = tmp_path / 'reports'
     reports.mkdir(parents=True)
     (reports / f'insights-{today}.md').write_text('# Insights\n\n- Sample insight', encoding='utf-8')

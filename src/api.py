@@ -211,7 +211,7 @@ def insights_html():
 def dryrun_html(rule: str | None = None, action: str | None = None, date: str | None = None):
     # Aggregate decisions by rule and action for today
     import datetime as dt
-    day = (date or dt.datetime.utcnow().date().isoformat())
+    day = (date or dt.datetime.now(dt.timezone.utc).date().isoformat())
     all_decs = decisions_store.tail(5000)
     agg = {}
     for d in all_decs:
@@ -249,7 +249,7 @@ def dryrun_html(rule: str | None = None, action: str | None = None, date: str | 
 @app.get("/dryrun.json")
 def dryrun_json(rule: str | None = None, action: str | None = None, date: str | None = None):
     import datetime as dt
-    day = (date or dt.datetime.utcnow().date().isoformat())
+    day = (date or dt.datetime.now(dt.timezone.utc).date().isoformat())
     all_decs = decisions_store.tail(10000)
     agg = {}
     for d in all_decs:

@@ -91,7 +91,7 @@ def parse_ring_buffer(xml_text: str):
 
 
 def save_raw(events):
-    date = dt.datetime.utcnow().strftime("%Y%m%d")
+    date = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d")
     out_dir = Path("data/xevents/raw")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / f"{date}.jsonl"
@@ -115,4 +115,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

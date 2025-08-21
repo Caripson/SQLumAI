@@ -17,7 +17,7 @@ def test_e2e_reports_and_api(tmp_path, monkeypatch):
     # Decisions for today
     dec_dir = tmp_path / "data/metrics"
     dec_dir.mkdir(parents=True)
-    today = dt.datetime.utcnow().strftime("%Y-%m-%d")
+    today = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
     decs = [
         {"ts": today + "T00:00:00Z", "action": "autocorrect", "rule_id": "r-email", "reason": "Normalize email", "sample": "INSERT ..."},
         {"ts": today + "T00:05:00Z", "action": "block", "rule_id": "r-block", "reason": "Block test data", "sample": "INSERT ..."},

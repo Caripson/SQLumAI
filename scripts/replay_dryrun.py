@@ -57,7 +57,7 @@ def simulate(input_path: Path, rules_path: str | None = None) -> dict:
 def write_report(results: dict) -> Path:
     outdir = Path("reports")
     outdir.mkdir(exist_ok=True)
-    ts = dt.datetime.utcnow().strftime("%Y-%m-%d_%H%M%S")
+    ts = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d_%H%M%S")
     out = outdir / f"simulate-{ts}.md"
     lines = [f"# Dry‑Run Simulation – {ts}", "", "## Totals by Action"]
     for k, v in sorted(results.get("actions", {}).items(), key=lambda kv: kv[0]):
@@ -86,4 +86,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -8,7 +8,7 @@ def test_dryrun_json_aggregation(tmp_path, monkeypatch):
     # Prepare decisions for today
     d = tmp_path / 'data/metrics'
     d.mkdir(parents=True)
-    today = dt.datetime.utcnow().date().isoformat()
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
     items = [
         {"ts": today + 'T01:00:00Z', "rule_id": "r1", "action": "autocorrect"},
         {"ts": today + 'T02:00:00Z', "rule_id": "r1", "action": "block"},

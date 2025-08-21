@@ -40,7 +40,7 @@ def test_health_and_decisions_and_metrics_html(tmp_path, monkeypatch):
     mdir = tmp_path / "data/metrics"
     mdir.mkdir(parents=True)
     (mdir / "metrics.json").write_text(json.dumps({"allowed": 3}), encoding="utf-8")
-    today = dt.datetime.utcnow().date().isoformat()
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
     rows = [
         {"ts": today + "T01:00:00Z", "rule_id": "r1", "action": "block", "reason": "bad data"},
         {"ts": today + "T02:00:00Z", "rule_id": "r2", "action": "allow", "reason": "ok"},
@@ -88,7 +88,7 @@ def test_insights_no_files(tmp_path, monkeypatch):
 
 def test_insights_markdown_variants(tmp_path, monkeypatch):
     # Cover h1, h2, list and paragraph rendering branches
-    today = dt.datetime.utcnow().date().isoformat()
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
     reports = tmp_path / "reports"
     reports.mkdir(parents=True)
     content = "\n".join([

@@ -4,7 +4,7 @@ import datetime as dt
 
 
 def test_dryrun_html_filters(tmp_path, monkeypatch):
-    today = dt.datetime.utcnow().date().isoformat()
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
     d = tmp_path / 'data/metrics'
     d.mkdir(parents=True)
     rows = [

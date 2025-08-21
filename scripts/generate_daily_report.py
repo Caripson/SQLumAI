@@ -25,7 +25,7 @@ def main():
         ((k, sum(v.get("suggestions", {}).values())) for k, v in profiles.items()), key=lambda kv: kv[1], reverse=True
     )[:10]
 
-    date = dt.datetime.utcnow().strftime("%Y-%m-%d")
+    date = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
     REPORTS_DIR.mkdir(exist_ok=True)
     out = REPORTS_DIR / f"report-{date}.md"
 

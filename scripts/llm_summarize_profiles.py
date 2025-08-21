@@ -99,7 +99,7 @@ def main():
         out = "\n".join(lines)
 
     REPORTS_DIR.mkdir(exist_ok=True)
-    date = dt.datetime.utcnow().strftime("%Y-%m-%d")
+    date = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
     path = REPORTS_DIR / f"llm-summary-{date}.md"
     path.write_text(out, encoding="utf-8")
     print(f"Wrote LLM summary to {path}")

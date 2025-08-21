@@ -24,7 +24,7 @@ def iter_decisions_for_date(date: dt.date):
 
 
 def main():
-    today = dt.datetime.utcnow().date()
+    today = dt.datetime.now(dt.timezone.utc).date()
     actions_total = Counter()
     per_rule = defaultdict(lambda: Counter())
     samples = defaultdict(list)
@@ -61,4 +61,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
