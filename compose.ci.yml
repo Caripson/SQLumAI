@@ -1,0 +1,5 @@
+services:
+  proxy:
+    environment:
+      - ENFORCEMENT_MODE=enforce
+      - RPC_REPACK_BUILDER=true

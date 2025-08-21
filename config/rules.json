@@ -1,0 +1,54 @@
+[
+  {
+    "id": "example-1",
+    "target": "column",
+    "selector": "dbo.Customers.Phone",
+    "action": "autocorrect",
+    "reason": "Normalize Swedish phone numbers",
+    "confidence": 0.95
+  },
+  {
+    "id": "normalize-country",
+    "target": "column",
+    "selector": "CountryCode",
+    "action": "autocorrect",
+    "reason": "Normalize to ISO alpha-2",
+    "confidence": 0.9,
+    "apply_in_envs": ["dev", "staging"],
+    "min_hits_to_enforce": 10
+  },
+  {
+    "id": "normalize-orgnr",
+    "target": "column",
+    "selector": "OrgNr",
+    "action": "autocorrect",
+    "reason": "Normalize Swedish org number",
+    "confidence": 0.9,
+    "apply_in_envs": ["dev", "staging"],
+    "min_hits_to_enforce": 10
+  },
+  {
+    "id": "block-null-email",
+    "target": "column",
+    "selector": "dbo.Users.Email",
+    "action": "block",
+    "reason": "Email is mandatory",
+    "confidence": 1.0
+  },
+  {
+    "id": "trim-whitespace-name",
+    "target": "column",
+    "selector": "dbo.Customers.Name",
+    "action": "autocorrect",
+    "reason": "Trim whitespace",
+    "confidence": 0.9
+  },
+  {
+    "id": "block-test-order-insert",
+    "target": "pattern",
+    "selector": "INSERT INTO dbo.Orders",
+    "action": "block",
+    "reason": "No test data in Orders",
+    "confidence": 0.9
+  }
+]

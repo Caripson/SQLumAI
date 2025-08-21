@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.11', '3.12', '3.13' ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      - name: Validate policy rules
+        run: |
+          make validate-rules
+      - name: Run tests
+        run: |
+          make test
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start stack (CI overrides)
+        run: |
+          docker compose -f compose.yml -f compose.ci.yml up -d --build
+          # Wait for proxy health by checking API
+          for i in {1..30}; do curl -sf http://localhost:8080/healthz && break || sleep 2; done
+      - name: Add RPC autocorrect rule (Phone)
+        run: |
+          curl -s -X POST http://localhost:8080/rules \
+            -H 'Content-Type: application/json' \
+            -d '{"id":"ci-phone-autocorrect","target":"column","selector":"Phone","action":"autocorrect","reason":"Normalize SE phone","confidence":0.9}'
+      - name: Create test DB objects and query via proxy
+        run: |
+          # Create a simple table and SP via SQL Server container
+          docker exec mssql /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Your_strong_Pa55' -Q "CREATE DATABASE demo; USE demo; CREATE TABLE T(Id INT, Phone NVARCHAR(32)); CREATE PROC dbo.Upd @Id INT, @Phone NVARCHAR(32) AS BEGIN UPDATE T SET Phone=@Phone WHERE Id=@Id; END; INSERT INTO T VALUES (1,'0701234567');"
+          # Query through proxy using sqlcmd inside mssql container, targeting proxy service name
+          docker exec mssql /opt/mssql-tools/bin/sqlcmd -S proxy,61433 -U sa -P 'Your_strong_Pa55' -Q "USE demo; SELECT COUNT(*) FROM T; EXEC dbo.Upd 1, '0707654321'; SELECT TOP 1 Phone FROM T WHERE Id=1;"
+      - name: Fetch metrics
+        run: |
+          curl -sf http://localhost:8080/metrics -o metrics.json
+          python - <<'PY'
+import json
+with open('metrics.json') as f:
+    m = json.load(f)
+val = int(m.get('rpc_seen', 0))
+assert val >= 1, f"expected rpc_seen>=1, got {val}"
+print('rpc_seen OK:', val)
+ac = int(m.get('rpc_autocorrect_inplace', 0))
+assert ac >= 1, f"expected rpc_autocorrect_inplace>=1, got {ac}"
+print('rpc_autocorrect_inplace OK:', ac)
+PY
+      - name: Check dry-run aggregates
+        run: |
+          d=$(date -u +%F)
+          curl -sf "http://localhost:8080/dryrun.json?date=$d" -o dry.json
+          python - <<'PY'
+import json
+with open('dry.json') as f:
+    data = json.load(f)
+rules = data.get('rules', {})
+assert isinstance(rules, dict) and len(rules) >= 0
+print('dryrun.json OK, rules keys:', list(rules.keys())[:5])
+PY
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose down -v

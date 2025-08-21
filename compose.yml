@@ -1,0 +1,33 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Your_strong_Pa55
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Your_strong_Pa55", "-Q", "select 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  proxy:
+    build: .
+    depends_on:
+      mssql:
+        condition: service_healthy
+    environment:
+      - SQL_HOST=mssql
+      - SQL_PORT=1433
+      - PROXY_LISTEN_ADDR=0.0.0.0
+      - PROXY_LISTEN_PORT=61433
+      - ENABLE_API=true
+      - API_PORT=8080
+      - ENABLE_TDS_PARSER=true
+      - ENABLE_SQL_TEXT_SNIFF=true
+      - ENFORCEMENT_MODE=log
+      - RPC_AUTOCORRECT_INPLACE=true
+    ports:
+      - "61433:61433"
+      - "8080:8080"

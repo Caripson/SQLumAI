@@ -1,0 +1,11 @@
+{
+  "dbo.UpdateCustomer": {
+    "CustomerId": "int",
+    "Phone": "nvarchar",
+    "IsActive": "bit"
+  },
+  "dbo.CreateOrder": {
+    "CustomerId": "int",
+    "OrderRef": "nvarchar"
+  }
+}

@@ -1,0 +1,13 @@
+site_name: SQLumAI Docs
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Enforcement: enforcement.md
+  - How-To: howto-reports.md
+  - Integration: howto-integration.md
+  - QA Checklist: qa-checklist.md
+  - Dry-Run JSON: dryrun-json.md
+  - Dry-Run Chart: dryrun-chart.md
+docs_dir: docs

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# SQLumAI pre-commit hook: validate policy rules
+# Install: cp scripts/git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+set -euo pipefail
+
+ROOT_DIR=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+cd "$ROOT_DIR"
+
+if [ ! -f scripts/validate_rules.py ]; then
+  exit 0
+fi
+
+echo "[pre-commit] Validating policy rules…"
+PY=${PY:-python3}
+if ! command -v "$PY" >/dev/null 2>&1; then
+  PY=python
+fi
+
+"$PY" scripts/validate_rules.py config/rules.json
+
+echo "[pre-commit] OK"
+
