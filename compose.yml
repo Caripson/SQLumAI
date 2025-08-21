@@ -1,4 +1,16 @@
 services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - ollama:/root/.ollama
+
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
@@ -15,6 +27,8 @@ services:
   proxy:
     build: .
     depends_on:
+      ollama:
+        condition: service_healthy
       mssql:
         condition: service_healthy
     environment:
@@ -28,6 +42,12 @@ services:
       - ENABLE_SQL_TEXT_SNIFF=true
       - ENFORCEMENT_MODE=log
       - RPC_AUTOCORRECT_INPLACE=true
+      - LLM_PROVIDER=ollama
+      - LLM_MODEL=llama3.2
+      - LLM_ENDPOINT=http://ollama:11434
     ports:
       - "61433:61433"
       - "8080:8080"
+
+volumes:
+  ollama:

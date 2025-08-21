@@ -14,19 +14,33 @@ REPORTS_DIR = Path("reports")
 
 
 def try_llm(prompt: str) -> str | None:
+    provider = (os.getenv("LLM_PROVIDER") or "").lower()
+    model = os.getenv("LLM_MODEL", "llama3.2")
+    try:
+        import httpx
+    except Exception:
+        return None
+
+    # Ollama provider
+    if provider == "ollama":
+        endpoint = os.getenv("LLM_ENDPOINT", "http://localhost:11434")
+        try:
+            r = httpx.post(f"{endpoint}/api/generate", json={"model": model, "prompt": prompt, "stream": False}, timeout=30)
+            r.raise_for_status()
+            data = r.json()
+            return data.get("response")
+        except Exception:
+            return None
+
+    # Generic OpenAI-compatible
     endpoint = os.getenv("LLM_ENDPOINT")
     if not endpoint:
         return None
     try:
-        import httpx
-
-        model = os.getenv("LLM_MODEL", "sqlumai-default")
-        # Generic JSON body compatible with common local endpoints (e.g., OpenAI-format, llama.cpp proxies)
         payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2}
-        r = httpx.post(endpoint, json=payload, timeout=10)
+        r = httpx.post(endpoint, json=payload, timeout=30)
         r.raise_for_status()
         data = r.json()
-        # Try common shapes
         if isinstance(data, dict):
             if "choices" in data and data["choices"]:
                 return data["choices"][0]["message"]["content"]
@@ -78,4 +92,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

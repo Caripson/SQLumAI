@@ -39,6 +39,10 @@ jobs:
           docker compose -f compose.yml -f compose.ci.yml up -d --build
           # Wait for proxy health by checking API
           for i in {1..30}; do curl -sf http://localhost:8080/healthz && break || sleep 2; done
+      - name: Pull LLM model via Ollama
+        run: |
+          # Pull llama3.2 model inside the ollama container (first run caches it)
+          docker exec ollama ollama run llama3.2 -p "hi" || true
       - name: Add RPC autocorrect rule (Phone)
         run: |
           curl -s -X POST http://localhost:8080/rules \
@@ -68,6 +72,12 @@ jobs:
         run: |
           d=$(date -u +%F)
           curl -sf "http://localhost:8080/dryrun.json?date=$d" -o dry.json
+      - name: LLM summary smoke test
+        run: |
+          # Create a tiny profile and run LLM summary inside the proxy container
+          docker exec proxy /bin/bash -lc "mkdir -p data/aggregations; echo '{"'"dbo.T.Col"'"': {"'"count"'"': 1, "'"nulls"'"': 0, "'"suggestions"'"': {"'"phone"'"': 1}}}' > data/aggregations/field_profiles.json"
+          docker exec proxy python scripts/llm_summarize_profiles.py
+          docker exec proxy /bin/sh -lc "ls -1 reports/llm-summary-*.md"
           python - <<'PY'
           import json
           with open('dry.json') as f:

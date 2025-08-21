@@ -14,6 +14,11 @@ curl http://localhost:8080/healthz  # should return {"status":"ok"}
 
 The proxy listens on `localhost:61433`; the API is at `http://localhost:8080`.
 
+## Enable LLM via Ollama
+- The stack includes an `ollama` service. The proxy is configured with `LLM_PROVIDER=ollama`, `LLM_MODEL=llama3.2`, `LLM_ENDPOINT=http://ollama:11434`.
+- First run pulls the model: `docker exec ollama ollama run llama3.2 -p "hi"`.
+- Generate an LLM summary: `docker exec proxy python scripts/llm_summarize_profiles.py` (ensure profiles exist under `data/aggregations/field_profiles.json`).
+
 ## Create sample DB objects
 Use the SQL Server container’s `sqlcmd`:
 ```bash
