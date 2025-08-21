@@ -10,7 +10,14 @@ REPORTS_DIR = Path("reports")
 def main():
     if not PROFILES.exists():
         raise SystemExit("No profiles found. Run scripts/aggregate_profiles.py first.")
-    profiles = json.loads(PROFILES.read_text())
+    raw = json.loads(PROFILES.read_text())
+    # Backward compatible: either a flat mapping or a dict with 'profiles' and 'selects'
+    if isinstance(raw, dict) and "profiles" in raw:
+        profiles = raw.get("profiles", {})
+        selects = raw.get("selects", {})
+    else:
+        profiles = raw
+        selects = {}
 
     # Simple rankings
     top_fields = sorted(profiles.items(), key=lambda kv: kv[1].get("nulls", 0), reverse=True)[:10]
@@ -36,8 +43,26 @@ def main():
         hints = ", ".join(f"{kind}:{cnt}" for kind, cnt in kinds.items())
         lines.append(f"- {k}: {n} suggestions ({hints})")
     lines.append("")
+    if selects:
+        lines.append("## SELECT Analysis")
+        for table, info in selects.items():
+            star = info.get("star", 0)
+            cols = sorted(info.get("columns", {}).items(), key=lambda kv: kv[1], reverse=True)[:5]
+            cols_str = ", ".join(f"{c}:{n}" for c, n in cols)
+            lines.append(f"- {table}: select_star={star}, top_columns=[{cols_str}]")
+        lines.append("")
     lines.append("## Drift & Errors")
-    lines.append("- TODO: compute PSI/KL and error trends once enough history is available.")
+    # Optional: compute simple null-ratio drift if previous snapshot is available
+    prev_path = PROFILES.with_name("field_profiles.prev.json")
+    if prev_path.exists():
+        from scripts.drift_utils import compute_null_drift
+        prev_raw = json.loads(prev_path.read_text())
+        prev_profiles = prev_raw.get("profiles", prev_raw) if isinstance(prev_raw, dict) else {}
+        drifts = compute_null_drift(prev_profiles, profiles, threshold=0.1)[:10]
+        for field, delta in drifts:
+            lines.append(f"- {field}: null_ratio drift {delta:.2f}")
+    else:
+        lines.append("- TODO: compute PSI/KL and error trends once enough history is available.")
 
     out.write_text("\n".join(lines), encoding="utf-8")
     print(f"Wrote report to {out}")

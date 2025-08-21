@@ -6,7 +6,7 @@ PIP ?= pip3
 .PHONY: help setup dev test fmt lint coverage clean
 
 help: ## Show common targets
-	@echo "Targets: setup, dev, test, test-85, fmt, lint, coverage, validate-rules, report-dryrun, docs-serve, llm-pull, integration-up, integration-up-ci, integration-down, metrics-up, metrics-down, clean"
+	@echo "Targets: setup, dev, test, test-85, test-90, fmt, lint, coverage, validate-rules, report-dryrun, simulate, docs-serve, llm-pull, integration-up, integration-up-ci, integration-down, metrics-up, metrics-down, clean"
 
 setup: ## Install dependencies across supported stacks
 	@echo "[setup] Installing dependencies (best-effort)…"
@@ -34,8 +34,12 @@ test: ## Run unit/integration tests with coverage where available
 	else echo "- Skipping Python tests"; fi
 
 test-85: ## Run tests with 85% coverage threshold
-	@echo "[test] Running tests with --cov-fail-under=85…"
-	@$(PY) -m pytest --cov=src --cov-report=term-missing --cov-fail-under=85
+    @echo "[test] Running tests with --cov-fail-under=85…"
+    @$(PY) -m pytest --cov=src --cov-report=term-missing --cov-fail-under=85
+
+test-90: ## Run tests with 90% coverage threshold
+    @echo "[test] Running tests with --cov-fail-under=90…"
+    @$(PY) -m pytest --cov=src --cov-report=term-missing --cov-fail-under=90
 	@# Go
 	@if command -v go >/dev/null && [ -f go.mod ]; then \
 		go test ./...; \
@@ -84,6 +88,15 @@ validate-rules: ## Validate config/rules.json against API schema
 report-dryrun: ## Generate dry-run enforcement summary report
 	@echo "[report] Generating dry-run report…"
 	@$(PY) scripts/generate_dryrun_report.py
+
+simulate: ## Replay simulation from events JSONL
+	@echo "[simulate] Running dry-run simulation…"
+	@INPUT=$${INPUT:-data/simulate/events.jsonl}; \
+	if [ -f $$INPUT ]; then \
+		$(PY) scripts/replay_dryrun.py $$INPUT; \
+	else \
+		echo "No input at $$INPUT. Provide INPUT=/path/to/events.jsonl"; exit 1; \
+	fi
 
 docs-serve: ## Serve MkDocs site locally if mkdocs is available
 	@if command -v mkdocs >/dev/null; then \

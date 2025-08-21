@@ -7,6 +7,7 @@ from collections import defaultdict, Counter
 from pathlib import Path
 import re
 from agents.normalizers import suggest_normalizations
+from src.tds.sqlparse_simple import extract_select_info
 
 
 RAW_DIR = Path("data/xevents/raw")
@@ -75,6 +76,7 @@ def extract_values(sql_text: str):
 
 def main():
     profiles = defaultdict(lambda: {"count": 0, "nulls": 0, "values": Counter(), "suggestions": Counter()})
+    select_summary = defaultdict(lambda: {"star": 0, "columns": Counter()})
     for e in iter_events():
         sql_text = (e.get("sql_text") or "").strip()
         cols = extract_columns(sql_text)
@@ -93,11 +95,22 @@ def main():
                     kind = suggestion["kind"]
                     profiles[key]["suggestions"][kind] += 1
 
+        # Read-only SELECT analysis (lightweight): count SELECT * and column usage
+        if sql_text.lower().startswith("select "):
+            tables, cols_sel, star = extract_select_info(sql_text)
+            if tables:
+                t = tables[0]
+                if star:
+                    select_summary[t]["star"] += 1
+                for c in cols_sel:
+                    select_summary[t]["columns"][c] += 1
+
     # Convert Counters to plain dicts
     out = {k: {**v, "values": dict(v["values"]), "suggestions": dict(v["suggestions"])} for k, v in profiles.items()}
+    select_out = {k: {"star": v["star"], "columns": dict(v["columns"])} for k, v in select_summary.items()}
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     with OUT_FILE.open("w", encoding="utf-8") as f:
-        json.dump(out, f, indent=2)
+        json.dump({"profiles": out, "selects": select_out}, f, indent=2)
     print(f"Wrote profiles to {OUT_FILE}")
 
 

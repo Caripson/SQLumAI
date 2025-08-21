@@ -50,3 +50,50 @@ curl -s "http://localhost:8080/dryrun.json?date=$DAY" | jq .
   - Use an override file: `docker compose -f compose.yml -f compose.ci.yml up -d` (see compose.ci.yml for example settings).
 
 Tip: Visit `http://localhost:8080/metrics.html` and `http://localhost:8080/dryrun.html` for a quick HTML view.
+
+## Manage rules via UI and API
+- Minimal UI: open `http://localhost:8080/rules/ui` to browse and skapa regler. Använd testpanelen för att simulera ett beslut mot nuvarande regler.
+- API exempel (CRUD):
+```bash
+curl -s -X POST http://localhost:8080/rules \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"no-null-email","target":"column","selector":"dbo.Users.Email","action":"block","reason":"Email required","confidence":1.0}'
+curl -s http://localhost:8080/rules | jq .
+```
+
+## XEvents setup (guided)
+Hämta en färdig SQL‑session för Extended Events via API:
+```bash
+curl -s -X POST "http://localhost:8080/xevents/setup?mode=ring" | jq -r .sql > create_xevents.generated.sql
+# Kör i SQL Server (via SSMS/sqlcmd) för att skapa/startera sessionen
+```
+Alternativt generera lokalt:
+```bash
+python scripts/setup_xevents.py > scripts/create_xevents.generated.sql
+```
+
+## Rule suggestion from natural language
+Låt API föreslå en regel från klartext (ingen auto‑apply):
+```bash
+curl -s -X POST http://localhost:8080/rules/suggest \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Email måste vara obligatorisk"}' | jq .
+```
+
+## Simulation with example events
+Kör en torrkörning på exempeldata:
+```bash
+make simulate INPUT=examples/events-sample.jsonl
+```
+Se även fler detaljer i `docs/examples.md`.
+
+## SELECT‑analys och drift
+- `scripts/aggregate_profiles.py` skriver även statistik för SELECT (t.ex. antal `SELECT *` per tabell). `scripts/generate_daily_report.py` tar med en sektion “SELECT Analysis”.
+- Enkel null‑drift rapporteras om en tidigare snapshot finns i `data/aggregations/field_profiles.prev.json`.
+
+## Secrets
+Sätt `SECRET_PROVIDER=env|file` och läs hemligheter via `src/runtime/secrets.py`. Exempel (file):
+```bash
+export SECRET_PROVIDER=file
+export SQL_PASSWORD_FILE=/run/secrets/sql_password
+```

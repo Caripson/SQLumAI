@@ -1,5 +1,12 @@
 # MVP 1–3 Overview
 
+## MVP 4: Enforcement and DX
+- SQL coverage: detectors for MERGE, BULK INSERT, and read‑only SELECT analysis for hotspots (SELECT * counts, column usage).
+- Types: RPC builder support for DECIMAL/NUMERIC, DATE/TIME/DATETIME2/DATETIMEOFFSET, UNIQUEIDENTIFIER, VARBINARY.
+- Normalizers: decimal, datetime, uuid.
+- UI: lightweight Rules UI at `/rules/ui` with a “Test Decision” panel.
+- Ops: XEvents setup helper script and secrets provider abstraction.
+
 ## MVP 1: Pass‑through and snapshots
 - Transparent TCP proxy for TDS; no blocking.
 - Capture query text/params via SQL Server Extended Events (ring buffer or event_file).

@@ -1,7 +1,11 @@
 import importlib
 import json
 import datetime as dt
-from fastapi import HTTPException
+import pytest
+try:
+    from fastapi import HTTPException
+except Exception:  # pragma: no cover - optional in minimal env
+    pytest.skip("fastapi not installed; skipping API tests", allow_module_level=True)
 
 
 def setup_api_with_rules(tmp_path, monkeypatch):
@@ -122,4 +126,3 @@ def test_dryrun_filters_exclusions(tmp_path, monkeypatch):
     assert j["rules"].get("r1", {}).get("block", 0) == 1
     h = api.dryrun_html(rule="r1", action="block", date=today)
     assert "r1" in h and "r2" not in h
-

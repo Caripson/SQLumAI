@@ -1,0 +1,4 @@
+{"table": "dbo.Customers", "column": "dbo.Customers.Email", "value": "", "sql_text": "UPDATE dbo.Customers SET Email='' WHERE Id=1"}
+{"table": "dbo.Customers", "column": "dbo.Customers.Phone", "value": "070 123 45 67", "sql_text": "INSERT INTO dbo.Customers (Phone) VALUES ('070 123 45 67')"}
+{"table": "dbo.Orders", "column": "dbo.Orders.Country", "value": "sweden", "sql_text": "INSERT INTO dbo.Orders (Country) VALUES ('sweden')"}
+{"sql_text": "SELECT * FROM dbo.Users"}

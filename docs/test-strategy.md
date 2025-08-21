@@ -1,14 +1,14 @@
 # Test Strategy
 
 ## Coverage Policy
-- Target: 90% locally, CI gate at 85% (raiseable).
+- Target: 92% locally, CI gate at 90%.
 - Exclusions: network-heavy and process entrypoints omitted via `.coveragerc`:
   - `src/proxy/*`, `src/main.py`, and the thin file loader.
 - Philosophy: cover logic-heavy modules (API handlers, metrics, policy engine, parsing, LLM utilities).
 
 ## Running Tests Efficiently
 - Quick run: `make test` (or `python3 -m pytest -q`).
-- Coverage 85%: `make test-85` (or `python3 -m pytest --cov=src --cov-report=term-missing --cov-fail-under=85`).
+- Coverage 90%: `make test-90` (or `python3 -m pytest --cov=src --cov-report=term-missing --cov-fail-under=90`).
 - Speed up locally:
   - Use `-k` to select subsets, e.g. `-k 'not proxy'` to skip socket tests.
   - Re-run failures only: `-k 'last_failed or <pattern>'`.

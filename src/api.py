@@ -1,15 +1,67 @@
-from fastapi import FastAPI, HTTPException, Response
-from pydantic import BaseModel, Field
+try:
+    from fastapi import FastAPI, HTTPException, Response
+except Exception:  # minimal shim for environments without fastapi
+    class HTTPException(Exception):
+        def __init__(self, status_code: int = 500, detail: str = ""):
+            super().__init__(detail)
+            self.status_code = status_code
+
+    class Response:  # type: ignore
+        def __init__(self, content: str | bytes = b"", media_type: str = "text/html"):
+            self.content = content
+            self.media_type = media_type
+            # For tests accessing body
+            try:
+                self.body = content if isinstance(content, bytes) else str(content).encode("utf-8")
+            except Exception:
+                self.body = b""
+
+    class DummyApp:
+        def __init__(self, *_, **__):
+            pass
+
+        def get(self, *_args, **_kwargs):
+            def deco(fn):
+                return fn
+            return deco
+
+        def post(self, *_args, **_kwargs):
+            def deco(fn):
+                return fn
+            return deco
+
+        def delete(self, *_args, **_kwargs):
+            def deco(fn):
+                return fn
+            return deco
+
+    FastAPI = DummyApp  # type: ignore
+try:
+    from pydantic import BaseModel, Field
+except Exception:  # minimal shim for environments without pydantic
+    class BaseModel:  # type: ignore
+        def __init__(self, **data):
+            for k, v in data.items():
+                setattr(self, k, v)
+
+        def model_dump(self):
+            return {k: getattr(self, k) for k in self.__dict__.keys()}
+
+    def Field(default=None, **_):  # type: ignore
+        return default
 from typing import List, Literal, Optional
 import json
 import os
 from threading import RLock
 from src.metrics import store as metrics_store
 from src.metrics import decisions as decisions_store
+from src.policy.engine import PolicyEngine as _PE, Rule as _PRule, Event as _PEvent
+from scripts.setup_xevents import render_xevents_sql
 
 app = FastAPI(title="SQLumAI Policy API", version="0.1.0")
 
 RULES_PATH = os.getenv("RULES_PATH", "config/rules.json")
+PROPOSED_RULES_PATH = os.getenv("PROPOSED_RULES_PATH", "config/rules_proposed.json")
 _lock = RLock()
 
 
@@ -128,7 +180,7 @@ def metrics_prom():
                     lines.append(f'sqlumai_metric{{key="rule",rule="{rid}",action="{act}"}} {int(v)}')
                     continue
             lines.append(f'sqlumai_metric{{key="{k}"}} {int(v)}')
-        return Response(content="\n".join(lines) + "\n", media_type="text/plain")
+    return Response(content="\n".join(lines) + "\n", media_type="text/plain")
 
 @app.get("/insights.html")
 def insights_html():
@@ -213,3 +265,159 @@ def dryrun_json(rule: str | None = None, action: str | None = None, date: str | 
         agg.setdefault(rid, {}).setdefault(act, 0)
         agg[rid][act] += 1
     return {"date": day, "rules": agg}
+
+
+@app.get("/rules/ui")
+def rules_ui():
+    rules = _read_rules()
+    rows = "".join(
+        f"<tr><td>{r.id}</td><td>{r.target}</td><td>{r.selector}</td><td>{r.action}</td><td>{r.reason}</td></tr>"
+        for r in rules
+    )
+    html = f"""
+    <html><head><title>Rules UI</title><style>body{{font-family:Arial,sans-serif}} table{{border-collapse:collapse}} td,th{{border:1px solid #ccc;padding:4px}}</style></head>
+    <body>
+      <h1>Rules</h1>
+      <table>
+        <tr><th>Id</th><th>Target</th><th>Selector</th><th>Action</th><th>Reason</th></tr>
+        {rows}
+      </table>
+      <h2>Add Rule</h2>
+      <form id="f" onsubmit="ev(event)">
+        <input name="id" placeholder="id"/> <select name="target"><option>table</option><option>column</option><option>pattern</option></select>
+        <input name="selector" placeholder="selector"/> <select name="action"><option>allow</option><option>block</option><option>autocorrect</option></select>
+        <input name="reason" placeholder="reason"/>
+        <button type="submit">Create</button>
+      </form>
+      <script>
+        async function ev(e){{e.preventDefault();const fd=new FormData(document.getElementById('f'));const body={{id:fd.get('id'),target:fd.get('target'),selector:fd.get('selector'),action:fd.get('action'),reason:fd.get('reason')}};await fetch('/rules',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(body)}});location.reload();}}
+      </script>
+      <h2>Test Decision</h2>
+      <form id="t" onsubmit="tv(event)">
+        <input name="table" placeholder="dbo.Table"/> <input name="column" placeholder="dbo.Table.Col"/> <input name="value" placeholder="value"/>
+        <input name="sql_text" placeholder="optional SQL text" style="width:400px"/>
+        <button type="submit">Preview</button>
+      </form>
+      <pre id="out"></pre>
+      <script>
+        async function tv(e){{e.preventDefault();const fd=new FormData(document.getElementById('t'));const body={{table:fd.get('table'),column:fd.get('column'),value:fd.get('value'),sql_text:fd.get('sql_text')}};const r=await fetch('/rules/test',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(body)}});document.getElementById('out').textContent=await r.text();}}
+      </script>
+    </body></html>
+    """
+    return html
+
+
+class _TestEvent(BaseModel):
+    table: Optional[str] = None
+    column: Optional[str] = None
+    value: Optional[str] = None
+    sql_text: Optional[str] = None
+
+
+@app.post("/rules/test")
+def rules_test(ev: _TestEvent):
+    rules = [_PRule(**r.model_dump()) for r in _read_rules()]
+    pe = _PE(rules)
+    dec = pe.decide(_PEvent(database=None, user=None, sql_text=ev.sql_text, table=ev.table, column=ev.column, value=ev.value))
+    return dec.__dict__
+
+
+def _read_rules_from(path: str) -> List[Rule]:
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        return [Rule(**r) for r in json.load(f)]
+
+
+def _write_rules_to(path: str, rules: List[Rule]):
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump([r.model_dump() for r in rules], f, indent=2)
+
+
+@app.get("/rules/proposed", response_model=List[Rule])
+def list_rules_proposed():
+    return _read_rules_from(PROPOSED_RULES_PATH)
+
+
+@app.post("/rules/proposed", response_model=Rule)
+def add_rule_proposed(rule: Rule):
+    rules = _read_rules_from(PROPOSED_RULES_PATH)
+    if any(r.id == rule.id for r in rules):
+        raise HTTPException(status_code=409, detail="Rule id exists")
+    rules.append(rule)
+    _write_rules_to(PROPOSED_RULES_PATH, rules)
+    return rule
+
+
+@app.get("/rules/diff")
+def rules_diff():
+    cur = {r.id: r for r in _read_rules()}
+    prop = {r.id: r for r in _read_rules_from(PROPOSED_RULES_PATH)}
+    added = [r.model_dump() for k, r in prop.items() if k not in cur]
+    removed = [r.model_dump() for k, r in cur.items() if k not in prop]
+    changed = []
+    for k in set(cur.keys()) & set(prop.keys()):
+        if cur[k].model_dump() != prop[k].model_dump():
+            changed.append({"id": k, "current": cur[k].model_dump(), "proposed": prop[k].model_dump()})
+    return {"added": added, "removed": removed, "changed": changed}
+
+
+@app.post("/rules/promote")
+def rules_promote():
+    proposed = _read_rules_from(PROPOSED_RULES_PATH)
+    _write_rules(proposed)
+    return {"promoted": len(proposed)}
+
+
+@app.post("/xevents/setup")
+def xevents_setup(mode: str = "ring"):
+    mode = (mode or "ring").lower()
+    if mode not in ("ring", "file"):
+        raise HTTPException(status_code=400, detail="mode must be 'ring' or 'file'")
+    sql = render_xevents_sql("file" if mode == "file" else "ring")
+    return {"sql": sql}
+
+
+class _SuggestReq(BaseModel):
+    text: str
+
+
+@app.post("/rules/suggest")
+def rules_suggest(req: _SuggestReq):
+    """
+    Heuristic NL -> rule suggestion stub. Does not write rules.json.
+    """
+    t = req.text.lower()
+    import re
+    # Default suggestion
+    suggestion = {
+        "id": "suggest-1",
+        "target": "pattern",
+        "selector": "INSERT INTO",
+        "action": "block",
+        "reason": "Suggested from natural language",
+        "confidence": 0.7,
+        "enabled": True,
+    }
+    if any(k in t for k in ("phone", "telefon")):
+        suggestion.update({
+            "id": "phone-autocorrect",
+            "target": "column",
+            "selector": "Phone",
+            "action": "autocorrect",
+            "reason": "Normalize phone format",
+            "confidence": 0.8,
+        })
+    if "email" in t and any(k in t for k in ("require", "krav", "måste", "must")):
+        suggestion.update({
+            "id": "no-null-email",
+            "target": "column",
+            "selector": "Email",
+            "action": "block",
+            "reason": "Email required",
+            "confidence": 0.9,
+        })
+    # sanitize id
+    suggestion["id"] = re.sub(r"[^a-z0-9\-]", "-", suggestion["id"])[:64]
+    return suggestion

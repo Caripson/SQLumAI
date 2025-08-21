@@ -17,7 +17,7 @@ Developed by Johan Caripson.
 - Local: `make setup` then `make dev`.
 - Tests: `make test` (and `make coverage`).
 
-## Capabilities (MVP 1–3)
+## Capabilities (MVP 1–4)
 - MVP 1 – Transparent pass‑through: TCP proxy + XEvents readers (`scripts/create_xevents.sql`, `scripts/read_xevents.py`, `scripts/read_xel_files.py`), aggregation + daily reports.
 - MVP 2 – Normalization + feedback: `agents/normalizers.py` (date/phone/postal/email/country/orgnr), webhook feedback, LLM summaries.
 - MVP 3 – Gatekeeper: Rules API + engine, env‑gating, thresholds; optional TLS termination + TDS parsing for SQL Batch/RPC; simple column‑level autocorrect; metrics, audits, dashboards.
@@ -26,6 +26,16 @@ Developed by Johan Caripson.
   - LLM: `LLM_PROVIDER`, `LLM_MODEL`, `LLM_ENDPOINT` (Ollama default), `OPENAI_API_KEY` (OpenAI-compatible)
   - Scheduler: `ENABLE_SCHEDULER`, `SCHEDULE_INTERVAL_SEC`
   - Docs overview: see `docs/mvp.md`
+
+- MVP 4 – Enforcement + DX:
+  - Broader SQL detectors: MERGE, BULK INSERT, simple SELECT analysis (counts of SELECT * and columns).
+  - Extended RPC types in builder: DECIMAL/NUMERIC, DATE/TIME/DATETIME2/DATETIMEOFFSET, UNIQUEIDENTIFIER, VARBINARY.
+  - New normalizers: `decimal`, `datetime`, `uuid` in `agents/normalizers.py`.
+- Rules UI: browse and add rules at `/rules/ui`, with an inline “Test Decision” panel.
+  - NL→Rule suggestion: `POST /rules/suggest` returns a proposed rule JSON from plain text.
+  - XEvents helper API: `POST /xevents/setup?mode=ring|file` returns a ready-to-run SQL session script.
+  - XEvents setup helper: `scripts/setup_xevents.py` renders a session SQL for ring buffer or file targets.
+  - Secrets provider: `src/runtime/secrets.py` with `SECRET_PROVIDER=env|file`.
 
 See `AGENTS.md` for contributor guidelines and development conventions.
 
@@ -56,10 +66,11 @@ flowchart LR
 
 Docs
 - Browse docs in `docs/` or serve with `mkdocs serve`.
-- MVPs: `docs/mvp.md`  |  Enforcement: `docs/ENFORCEMENT.md`  |  Architecture: `docs/architecture.md`
+- MVPs: `docs/mvp.md`  |  Enforcement: `docs/ENFORCEMENT.md`  |  Architecture: `docs/architecture.md` | HA: `docs/ha.md`
 - LLM config/providers: `docs/llm-providers.md`  |  Insights: `docs/insights.md`
 - Reports/Integration: `docs/howto-reports.md`, `docs/howto-integration.md`
 - Metrics dashboard: `docs/metrics-dashboard.md`
+ - High availability: `docs/ha.md`
 - Test strategy: `docs/test-strategy.md`
 
 ## Nightly Scheduler (example)
@@ -122,6 +133,7 @@ END
 ```python
 from agents.normalizers import suggest_normalizations
 assert suggest_normalizations("31/12/24")["normalized"] == "2024-12-31"
+assert suggest_normalizations("1\u00a0234,50")["normalized"] == "1234.50"
 ```
 
 - Policy rules (MVP 3): managed via the Rules API and persisted in `config/rules.json`.
@@ -138,9 +150,16 @@ API examples:
 
 ```bash
 curl -s http://localhost:8080/rules | jq .
+# Minimal UI and test panel
+open http://localhost:8080/rules/ui
 curl -s -X POST http://localhost:8080/rules \
   -H 'Content-Type: application/json' \
   -d '{"id":"no-null-email","target":"column","selector":"dbo.Users.Email","action":"block","reason":"Email required","confidence":1.0}'
+
+# Suggest a rule from natural language (stub)
+curl -s -X POST http://localhost:8080/rules/suggest \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Alla svenska telefonnummer ska normaliseras"}' | jq .
 ```
 
 ## Usage Scenarios: BSS, Booking, ServiceNow, CRM

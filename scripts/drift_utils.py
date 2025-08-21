@@ -1,0 +1,25 @@
+from typing import Dict, Tuple, List
+
+
+def null_ratio(profile: Dict) -> float:
+    cnt = max(1, int(profile.get("count", 0)))
+    nulls = int(profile.get("nulls", 0))
+    return nulls / cnt
+
+
+def compute_null_drift(prev: Dict[str, Dict], curr: Dict[str, Dict], threshold: float = 0.1) -> List[Tuple[str, float]]:
+    """
+    Returns a list of (field, delta) where the absolute change in null ratio exceeds threshold.
+    prev/curr are mappings: field -> profile dict with keys count/nulls.
+    """
+    out: List[Tuple[str, float]] = []
+    keys = set(prev.keys()) | set(curr.keys())
+    for k in keys:
+        p = prev.get(k, {})
+        c = curr.get(k, {})
+        d = abs(null_ratio(c) - null_ratio(p))
+        if d >= threshold:
+            out.append((k, d))
+    out.sort(key=lambda kv: kv[1], reverse=True)
+    return out
+
