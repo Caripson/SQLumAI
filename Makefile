@@ -9,7 +9,7 @@ help: ## Show common targets
 	@echo "Targets: setup, dev, test, test-85, test-90, fmt, lint, coverage, validate-rules, report-dryrun, simulate, docs-serve, llm-pull, integration-up, integration-up-ci, integration-down, metrics-up, metrics-down, clean"
 
 setup: ## Install dependencies across supported stacks
-	@echo "[setup] Installing dependencies (best-effort)…"
+	@echo "[setup] Installing dependencies (best-effort)..."
 	@([ -f requirements.txt ] && command -v $(PIP) >/dev/null && $(PIP) install -r requirements.txt) || true
 	@([ -f requirements-dev.txt ] && command -v $(PIP) >/dev/null && $(PIP) install -r requirements-dev.txt) || true
 	@([ -f package.json ] && command -v npm >/dev/null && npm ci) || true
@@ -17,7 +17,7 @@ setup: ## Install dependencies across supported stacks
 	@([ -f Cargo.toml ] && command -v cargo >/dev/null && cargo fetch) || true
 
 dev: ## Run the proxy locally (docker or python fallback)
-	@echo "[dev] Starting local development runtime…"
+	@echo "[dev] Starting local development runtime..."
 	@if [ -f docker-compose.yml ] || [ -f compose.yml ]; then \
 		echo "Using docker compose"; docker compose up; \
 	elif [ -f src/main.py ]; then \
@@ -27,19 +27,11 @@ dev: ## Run the proxy locally (docker or python fallback)
 	fi
 
 test: ## Run unit/integration tests with coverage where available
-	@echo "[test] Running tests (best-effort)…"
-	@# Python (pytest) — force same interpreter as $(PY)
+	@echo "[test] Running tests (best-effort)..."
+	@# Python (pytest) -- force same interpreter as $(PY)
 	@if command -v $(PY) >/dev/null && [ -d tests ]; then \
 		$(PY) -m pytest -q; \
 	else echo "- Skipping Python tests"; fi
-
-test-85: ## Run tests with 85% coverage threshold
-    @echo "[test] Running tests with --cov-fail-under=85…"
-    @$(PY) -m pytest --cov=src --cov-report=term-missing --cov-fail-under=85
-
-test-90: ## Run tests with 90% coverage threshold
-    @echo "[test] Running tests with --cov-fail-under=90…"
-    @$(PY) -m pytest --cov=src --cov-report=term-missing --cov-fail-under=90
 	@# Go
 	@if command -v go >/dev/null && [ -f go.mod ]; then \
 		go test ./...; \
@@ -53,8 +45,16 @@ test-90: ## Run tests with 90% coverage threshold
 		npm test --silent || true; \
 	else echo "- Skipping Node tests"; fi
 
+test-85: ## Run tests with 85% coverage threshold
+	@echo "[test] Running tests with --cov-fail-under=85..."
+	@$(PY) -m pytest --cov=src --cov-report=term-missing --cov-fail-under=85
+
+test-90: ## Run tests with 90% coverage threshold
+	@echo "[test] Running tests with --cov-fail-under=90..."
+	@$(PY) -m pytest --cov=src --cov-report=term-missing --cov-fail-under=90
+
 fmt: ## Auto-format code where tools are present
-	@echo "[fmt] Formatting code…"
+	@echo "[fmt] Formatting code..."
 	@command -v black >/dev/null && black . || true
 	@command -v ruff >/dev/null && ruff check --fix . || true
 	@command -v prettier >/dev/null && prettier -w . || true
@@ -62,14 +62,14 @@ fmt: ## Auto-format code where tools are present
 	@command -v cargo >/dev/null && test -f Cargo.toml && cargo fmt || true
 
 lint: ## Lint code where tools are present
-	@echo "[lint] Linting code…"
+	@echo "[lint] Linting code..."
 	@command -v ruff >/dev/null && ruff check . || true
 	@command -v eslint >/dev/null && test -f package.json && eslint . || true
 	@command -v golangci-lint >/dev/null && test -f go.mod && golangci-lint run || true
 	@command -v cargo >/dev/null && test -f Cargo.toml && cargo clippy --all-targets -- -D warnings || true
 
 coverage: ## Print coverage if available (Python/Go)
-		@echo "[coverage] Reporting coverage…"
+		@echo "[coverage] Reporting coverage..."
 		@if command -v $(PY) >/dev/null && [ -d tests ]; then \
 			$(PY) -m pytest --cov=src --cov-report=term-missing || true; \
 		else echo "- Skipping Python coverage"; fi
@@ -78,19 +78,19 @@ coverage: ## Print coverage if available (Python/Go)
 	else echo "- Skipping Go coverage"; fi
 
 clean: ## Remove caches and build artifacts
-	@echo "[clean] Cleaning artifacts…"
+	@echo "[clean] Cleaning artifacts..."
 	@rm -rf .pytest_cache __pycache__ dist build .coverage coverage htmlcov || true
 
 validate-rules: ## Validate config/rules.json against API schema
-	@echo "[validate-rules] Validating rules…"
+	@echo "[validate-rules] Validating rules..."
 	@$(PY) scripts/validate_rules.py config/rules.json
 
 report-dryrun: ## Generate dry-run enforcement summary report
-	@echo "[report] Generating dry-run report…"
+	@echo "[report] Generating dry-run report..."
 	@$(PY) scripts/generate_dryrun_report.py
 
 simulate: ## Replay simulation from events JSONL
-	@echo "[simulate] Running dry-run simulation…"
+	@echo "[simulate] Running dry-run simulation..."
 	@INPUT=$${INPUT:-data/simulate/events.jsonl}; \
 	if [ -f $$INPUT ]; then \
 		$(PY) scripts/replay_dryrun.py $$INPUT; \
@@ -104,7 +104,7 @@ docs-serve: ## Serve MkDocs site locally if mkdocs is available
 	else echo "mkdocs not installed. pip install mkdocs mkdocs-material"; fi
 
 llm-pull: ## Pre-pull Ollama model (default llama3.2)
-	@echo "[ollama] Pulling model…"
+	@echo "[ollama] Pulling model..."
 	@MODEL=$${MODEL:-llama3.2}; \
 	if docker ps --format '{{.Names}}' | grep -q '^ollama$$'; then \
 		docker exec ollama ollama run $$MODEL -p "hi" || true; \
@@ -114,24 +114,24 @@ llm-pull: ## Pre-pull Ollama model (default llama3.2)
 	fi
 
 integration-up: ## Start local integration stack (compose)
-	@echo "[compose] Starting local stack…"
+	@echo "[compose] Starting local stack..."
 	docker compose up -d --build
 	@echo "Health: curl http://localhost:8080/healthz"
 
 integration-up-ci: ## Start stack with CI overrides (enforce mode)
-	@echo "[compose] Starting CI stack…"
+	@echo "[compose] Starting CI stack..."
 	docker compose -f compose.yml -f compose.ci.yml up -d --build
 	@echo "Health: curl http://localhost:8080/healthz"
 
 integration-down: ## Stop and remove integration stack
-	@echo "[compose] Stopping stack…"
+	@echo "[compose] Stopping stack..."
 	docker compose down -v
 
 metrics-up: ## Start Prometheus+Grafana profile (requires integration-up)
-	@echo "[monitoring] Starting Prometheus and Grafana…"
+	@echo "[monitoring] Starting Prometheus and Grafana..."
 	docker compose -f compose.metrics.yml up -d
 	@echo "Prometheus: http://localhost:9090  Grafana: http://localhost:3000 (admin/admin)"
 
 metrics-down: ## Stop Prometheus+Grafana
-	@echo "[monitoring] Stopping Prometheus and Grafana…"
+	@echo "[monitoring] Stopping Prometheus and Grafana..."
 	docker compose -f compose.metrics.yml down -v
