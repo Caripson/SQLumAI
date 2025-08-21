@@ -54,28 +54,28 @@ jobs:
         run: |
           curl -sf http://localhost:8080/metrics -o metrics.json
           python - <<'PY'
-import json
-with open('metrics.json') as f:
-    m = json.load(f)
-val = int(m.get('rpc_seen', 0))
-assert val >= 1, f"expected rpc_seen>=1, got {val}"
-print('rpc_seen OK:', val)
-ac = int(m.get('rpc_autocorrect_inplace', 0))
-assert ac >= 1, f"expected rpc_autocorrect_inplace>=1, got {ac}"
-print('rpc_autocorrect_inplace OK:', ac)
-PY
+          import json
+          with open('metrics.json') as f:
+              m = json.load(f)
+          val = int(m.get('rpc_seen', 0))
+          assert val >= 1, f"expected rpc_seen>=1, got {val}"
+          print('rpc_seen OK:', val)
+          ac = int(m.get('rpc_autocorrect_inplace', 0))
+          assert ac >= 1, f"expected rpc_autocorrect_inplace>=1, got {ac}"
+          print('rpc_autocorrect_inplace OK:', ac)
+          PY
       - name: Check dry-run aggregates
         run: |
           d=$(date -u +%F)
           curl -sf "http://localhost:8080/dryrun.json?date=$d" -o dry.json
           python - <<'PY'
-import json
-with open('dry.json') as f:
-    data = json.load(f)
-rules = data.get('rules', {})
-assert isinstance(rules, dict) and len(rules) >= 0
-print('dryrun.json OK, rules keys:', list(rules.keys())[:5])
-PY
+          import json
+          with open('dry.json') as f:
+              data = json.load(f)
+          rules = data.get('rules', {})
+          assert isinstance(rules, dict) and len(rules) >= 0
+          print('dryrun.json OK, rules keys:', list(rules.keys())[:5])
+          PY
       - name: Tear down
         if: always()
         run: |
