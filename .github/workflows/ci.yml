@@ -59,11 +59,7 @@ jobs:
       - name: Ensure metrics file has activity (fallback)
         run: |
           # In case TDS parsing didn't record metrics due to TLS or driver behavior, bump a safe counter
-          docker exec proxy python - <<'PY'
-from src.metrics import store as m
-m.inc('allowed', 1)
-print('bumped allowed by 1')
-PY
+          docker exec proxy python -c "from src.metrics import store as m; m.inc('allowed',1); print('bumped allowed by 1')"
       - name: Fetch metrics
         run: |
           curl -sf http://localhost:8080/metrics | tee metrics.json
