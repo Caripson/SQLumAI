@@ -143,103 +143,103 @@ curl -s -X POST http://localhost:8080/rules \
   -d '{"id":"no-null-email","target":"column","selector":"dbo.Users.Email","action":"block","reason":"Email required","confidence":1.0}'
 ```
 
-## Användningsscenarier: BSS, Bokning, ServiceNow, CRM
+## Usage Scenarios: BSS, Booking, ServiceNow, CRM
 
-Den här sektionen beskriver praktiska flöden och hur SQLumAI kan användas i olika affärssystem. Fokus är på datakvalitet, process‑luckor och hur en lokal LLM förvandlar råa händelser till få, värdefulla åtgärder och insikter – utan att skicka data externt.
+This section outlines practical flows and how SQLumAI can be used across business systems. Focus areas are data quality, process gaps, and how a local LLM turns raw events into a short list of high‑value actions and insights — without sending data externally.
 
-### Var AI passar in
-- Observabilitet: Proxy och XEvents samlar råa händelser (SQL Batch/RPC, fältvärden i framskiktet när möjligt).
-- Normalisering: Regler och normalizers föreslår enkla åtgärder (t.ex. telefonformat, datum, e‑post) innan de når databasen.
-- Sammanställning: Jobb profilerar fält dagligen och bygger aggregat (topplistor, null‑andelar, frekvens av felhändelser).
-- LLM‑summering (lokal): En lokal modell (Ollama/llama3.2 som standard) läser profiler + händelser och producerar en kort lista över:
-  - Åtgärder (”lägg till enkel validering i formulär X”, ”normalisera fält Y”, ”blockera transaktioner med mönster Z i prod”),
-  - Insikter (”30% bokningar saknar e‑post i kanal A”, ”testdata i prodtabell T”, ”SLA‑risk för incidenttyp Q”).
-- Feedback: Insikter kan publiceras till webhook (Slack/Jira/ServiceNow‑integration), eller bara skrivas ut i rapporter under `reports/`.
+### Where AI Fits
+- Observability: The proxy and XEvents collect raw events (SQL Batch/RPC, and field values when available at the edge).
+- Normalization: Rules and normalizers suggest simple fixes (phone, date, email) before data reaches the database.
+- Aggregation: Jobs profile fields daily and build aggregates (top‑N, null ratios, frequency of errors).
+- Local LLM Summary: A local model (Ollama/llama3.2 by default) reads profiles + events and produces a short list of:
+  - Actions (“add simple validation in form X”, “normalize field Y”, “block pattern Z in prod”),
+  - Insights (“30% of bookings miss email in channel A”, “test data in prod table T”, “SLA risk for incident type Q”).
+- Feedback: Insights can go to a webhook (Slack/Jira/ServiceNow integration) or land as reports under `reports/`.
 
-Grundprinciper:
-- Lokal först: Ingen data skickas till externa LLM‑tjänster som standard. Ollama kör lokalt.
-- Dry‑run som default: Proxy blockerar inte – den loggar och föreslår. Du väljer när regler ska börja gälla (enforce).
-- Enkla regler: LLM föreslår, människa godkänner; regler blir tydliga i `config/rules.json` och spårbara i Git.
+Principles:
+- Local‑first: No data is sent to external LLMs by default. Ollama runs locally.
+- Dry‑run by default: The proxy doesn’t block — it logs and suggests. You decide when to enforce.
+- Simple rules: The LLM suggests, humans approve; rules live in `config/rules.json` and are auditable in Git.
 
 ### BSS (Business Support System)
-- Typiska problem:
-  - Olikformade kunduppgifter (telefon, e‑post, adress), saknade fält vid onboarding, felaktiga organisationsnummer.
-  - ”Workarounds” i CRM/BSS‑UI som leder till inkonsistenta poster i kundregister och abonnemangsdata.
-- Insamling:
-  - TDS‑proxy ser `INSERT/UPDATE` på tabeller som `dbo.Customers`, `dbo.Subscriptions` och RPC‑anrop för onboarding‑flöden.
-  - XEvents ger en bredare bild för batch/ETL‑källor som inte passerar proxyn.
-- Regler (exempel):
+- Typical issues:
+  - Inconsistent customer data (phone, email, address), missing fields on onboarding, invalid organization IDs.
+  - UI “workarounds” in CRM/BSS leading to inconsistent customer and subscription records.
+- Data capture:
+  - The TDS proxy sees `INSERT/UPDATE` on tables like `dbo.Customers`, `dbo.Subscriptions`, and RPC calls used in onboarding flows.
+  - XEvents capture broader coverage for batch/ETL sources that bypass the proxy.
+- Rules (example):
 ```json
 [
   {"id":"bss-phone-autocorrect","target":"column","selector":"dbo.Customers.Phone","action":"autocorrect","reason":"Normalize E.164","confidence":0.9},
-  {"id":"bss-email-required","target":"column","selector":"dbo.Customers.Email","action":"block","reason":"E‑post krävs vid onboarding","confidence":1.0},
+  {"id":"bss-email-required","target":"column","selector":"dbo.Customers.Email","action":"block","reason":"Email required at onboarding","confidence":1.0},
   {"id":"bss-no-test-subs","target":"pattern","selector":"INSERT INTO dbo.Subscriptions","action":"block","reason":"Stoppa testabonnemang i prod","confidence":0.9}
 ]
 ```
-- LLM‑insikter (exempel):
-  - ”17% av nya kunder saknar e‑post i kanal ’retail‑tablet’. Lägg enkel UI‑validering.”
-  - ”Vanligaste fel: felaktigt format på telefon. Autocorrect normaliserar 62% till E.164.”
-  - ”Föreslår regel: blockera INSERT på Subscriptions med dummy‑domäner (@test.local).”
+- LLM insights (examples):
+  - “17% of new customers miss email in ‘retail‑tablet’ channel — add simple UI validation.”
+  - “Most common error: phone format; autocorrect normalizes 62% to E.164.”
+  - “Propose rule: block INSERT on Subscriptions with dummy domains (@test.local).”
 
-### Bokningssystem
-- Typiska problem:
-  - Dubbelbokningar, ogiltiga datumintervall, kundfält saknas, otydliga avbokningsorsaker.
-- Regler (exempel):
+### Booking systems
+- Typical issues:
+  - Double bookings, invalid time ranges, missing customer fields, unclear cancellation reasons.
+- Rules (example):
 ```json
 [
-  {"id":"booking-no-overlap","target":"pattern","selector":"INSERT INTO dbo.Bookings","action":"block","reason":"Överlappande tider måste hanteras i app‑logik","confidence":0.8},
+  {"id":"booking-no-overlap","target":"pattern","selector":"INSERT INTO dbo.Bookings","action":"block","reason":"Overlapping times must be prevented in app logic","confidence":0.8},
   {"id":"booking-email-format","target":"column","selector":"dbo.Bookings.Email","action":"autocorrect","reason":"Korrigera vanliga typos","confidence":0.7}
 ]
 ```
-- LLM‑insikter (exempel):
-  - ”5% av bokningarna har avvikande sluttid < starttid i kanal ’kiosk’ – åtgärda UI.”
-  - ”Föreslår autosvar: bekräfta avbokningar med standardtext, minskar manuella ärenden.”
-  - ”Skapa enkel business‑regel: blockera re‑book inom 2 min (mis‑tap).”
+- LLM insights (examples):
+  - “5% of bookings have end < start in ‘kiosk’ channel — fix UI.”
+  - “Propose auto‑reply: confirm cancellations with a standard message to reduce manual tickets.”
+  - “Add a simple business rule: block re‑book within 2 minutes (mis‑tap).”
 
-### ServiceNow (ITSM/ärenden)
-- Typiska problem:
-  - Saknade fält i incidenter (CI, påverkan, kontakt), felaktig kategorisering, låg datakvalitet i manuellt skapade ärenden.
-  - Svårt att se var flöden läcker (t.ex. ärenden som studsar mellan grupper).
-- Regler (exempel):
+### ServiceNow (ITSM/Tickets)
+- Typical issues:
+  - Missing fields (CI, impact, contact), wrong categorization, low data quality in manually created tickets.
+  - Hard to see where flow leaks (e.g., tickets bouncing between groups).
+- Rules (example):
 ```json
 [
-  {"id":"sn-caller-required","target":"column","selector":"dbo.Incidents.Caller","action":"block","reason":"Caller måste anges","confidence":1.0},
-  {"id":"sn-category-autocorrect","target":"column","selector":"dbo.Incidents.Category","action":"autocorrect","reason":"Normalisera fria texter till kända kategorier","confidence":0.8}
+  {"id":"sn-caller-required","target":"column","selector":"dbo.Incidents.Caller","action":"block","reason":"Caller must be set","confidence":1.0},
+  {"id":"sn-category-autocorrect","target":"column","selector":"dbo.Incidents.Category","action":"autocorrect","reason":"Normalize free text to known categories","confidence":0.8}
 ]
 ```
-- LLM‑insikter (exempel):
-  - ”Incidenttyp ’VPN’ saknar CI i 28% – uppdatera portalformulär med kravfält.”
-  - ”Kö ’ServiceDesk L1’ loopar ofta till ’Network’ och tillbaka. Skapa regel: auto‑kategorisera när beskrivning matchar ’AnyConnect’.”
-  - ”Prognos: SLA‑risk ökar vecka 42 p.g.a. ökad inflödestakt i kanal e‑post.”
+- LLM insights (examples):
+  - “Incident type ‘VPN’ misses CI in 28% — update portal form with required field.”
+  - “Queue ‘ServiceDesk L1’ often bounces to ‘Network’ and back. Add a rule: auto‑categorize when description matches ‘AnyConnect’.”
+  - “Forecast: SLA risk increases week 42 due to higher email inflow.”
 
 ### CRM
-- Typiska problem:
-  - Dubletter, ofullständiga leads, felaktiga domäner, GDPR‑signaler saknas (samtycke), orealistiska värden i pipeline.
-- Regler (exempel):
+- Typical issues:
+  - Duplicates, incomplete leads, invalid domains, missing GDPR consent flags, unrealistic pipeline values.
+- Rules (example):
 ```json
 [
-  {"id":"crm-email-normalize","target":"column","selector":"dbo.Leads.Email","action":"autocorrect","reason":"Korrigera vanliga stavfel i e‑postdomäner","confidence":0.7},
-  {"id":"crm-consent-required","target":"column","selector":"dbo.Leads.Consent","action":"block","reason":"Samtycke krävs för outreach","confidence":1.0}
+  {"id":"crm-email-normalize","target":"column","selector":"dbo.Leads.Email","action":"autocorrect","reason":"Correct common email domain typos","confidence":0.7},
+  {"id":"crm-consent-required","target":"column","selector":"dbo.Leads.Consent","action":"block","reason":"Consent required for outreach","confidence":1.0}
 ]
 ```
-- LLM‑insikter (exempel):
-  - ”10% leads saknar landkod – föreslår autofyll baserat på telefonprefix.”
-  - ”Föreslår sanering: 420 dubletter i SME‑segmentet (match på e‑post+orgnr).”
-  - ”Skapa pipeline‑regel: blockera sannolikhet > 0.9 om ’deal size’ < 1 000 (datakvalitetslukt).”
+- LLM insights (examples):
+  - “10% of leads miss country code — propose autofill based on phone prefix.”
+  - “Suggest cleanup: 420 duplicates in SME segment (match on email+org ID).”
+  - “Add pipeline rule: block probability > 0.9 if ‘deal size’ < 1,000 (data quality smell).”
 
-### Så här kör du end‑to‑end i dev
-1) Starta stacken: `docker compose -f compose.yml -f compose.ci.yml up -d --build` (proxy + SQL + Ollama).
-2) Lägg till en enkel regel via API:
+### End‑to‑end in dev
+1) Start the stack: `docker compose -f compose.yml -f compose.ci.yml up -d --build` (proxy + SQL + Ollama).
+2) Add a simple rule via API:
 ```bash
 curl -s -X POST http://localhost:8080/rules \
   -H 'Content-Type: application/json' \
   -d '{"id":"phone-autocorrect","target":"column","selector":"Phone","action":"autocorrect","reason":"Normalize SE phone","confidence":0.9}'
 ```
-3) Skapa en minimal demo‑databas (exempel i `docs/howto-integration.md`).
-4) Kör några queries via proxyn (port 61433), öppna `http://localhost:8080/metrics.html` och `http://localhost:8080/dryrun.html`.
-5) Generera rapporter: `python scripts/generate_daily_report.py` och `python scripts/llm_summarize_profiles.py`.
+3) Create a minimal demo database (examples in `docs/howto-integration.md`).
+4) Run a few queries via the proxy (port 61433), open `http://localhost:8080/metrics.html` and `http://localhost:8080/dryrun.html`.
+5) Generate reports: `python scripts/generate_daily_report.py` and `python scripts/llm_summarize_profiles.py`.
 
-Tips för produktion:
-- Börja i ”log” (dry‑run). Bygg förtroende, mät effekter i `/metrics`, justera regler.
-- När ni är nöjda: sätt `ENFORCEMENT_MODE=enforce` för att börja blockera/korregera i begränsad scope (t.ex. bara vissa tabeller/kolumner).
-- Publicera insikter: sätt `FEEDBACK_WEBHOOK` för att skicka rapporter till Slack/Jira/ServiceNow (via mellanservice/connector).
+Production tips:
+- Start in “log” (dry‑run). Build trust, measure effects in `/metrics`, adjust rules.
+- When confident: set `ENFORCEMENT_MODE=enforce` and start enforcing in a limited scope (e.g., only certain tables/columns).
+- Publish insights: set `FEEDBACK_WEBHOOK` to send reports to Slack/Jira/ServiceNow (via a small connector service).
