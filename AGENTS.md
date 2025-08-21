@@ -29,7 +29,8 @@
 - Gate integration tests with env like `MSSQL_DSN`; skip if not set.
 - Target ≥80% coverage for core proxy/capture logic; exclude external setup code.
 - Include fixtures for sample queries and snapshot payloads.
- - Prefer `python3 -m pytest` to avoid interpreter mismatches; `make test` does this automatically.
+- Prefer `python3 -m pytest` to avoid interpreter mismatches; `make test` does this automatically.
+- See `docs/test-strategy.md` for coverage policy, quick commands, and CI notes.
 
 ## Commit & Pull Request Guidelines
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`.

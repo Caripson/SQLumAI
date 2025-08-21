@@ -6,7 +6,7 @@ PIP ?= pip3
 .PHONY: help setup dev test fmt lint coverage clean
 
 help: ## Show common targets
-	@echo "Targets: setup, dev, test, fmt, lint, coverage, validate-rules, report-dryrun, docs-serve, llm-pull, integration-up, integration-up-ci, integration-down, clean"
+	@echo "Targets: setup, dev, test, test-85, fmt, lint, coverage, validate-rules, report-dryrun, docs-serve, llm-pull, integration-up, integration-up-ci, integration-down, metrics-up, metrics-down, clean"
 
 setup: ## Install dependencies across supported stacks
 	@echo "[setup] Installing dependencies (best-effort)…"
@@ -32,6 +32,10 @@ test: ## Run unit/integration tests with coverage where available
 	@if command -v $(PY) >/dev/null && [ -d tests ]; then \
 		$(PY) -m pytest -q; \
 	else echo "- Skipping Python tests"; fi
+
+test-85: ## Run tests with 85% coverage threshold
+	@echo "[test] Running tests with --cov-fail-under=85…"
+	@$(PY) -m pytest --cov=src --cov-report=term-missing --cov-fail-under=85
 	@# Go
 	@if command -v go >/dev/null && [ -f go.mod ]; then \
 		go test ./...; \
@@ -109,3 +113,12 @@ integration-up-ci: ## Start stack with CI overrides (enforce mode)
 integration-down: ## Stop and remove integration stack
 	@echo "[compose] Stopping stack…"
 	docker compose down -v
+
+metrics-up: ## Start Prometheus+Grafana profile (requires integration-up)
+	@echo "[monitoring] Starting Prometheus and Grafana…"
+	docker compose -f compose.metrics.yml up -d
+	@echo "Prometheus: http://localhost:9090  Grafana: http://localhost:3000 (admin/admin)"
+
+metrics-down: ## Stop Prometheus+Grafana
+	@echo "[monitoring] Stopping Prometheus and Grafana…"
+	docker compose -f compose.metrics.yml down -v

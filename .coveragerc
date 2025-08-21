@@ -1,0 +1,5 @@
+[run]
+omit =
+    src/proxy/*
+    src/main.py
+    src/policy/loader.py

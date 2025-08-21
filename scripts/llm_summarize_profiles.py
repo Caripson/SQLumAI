@@ -70,6 +70,17 @@ def main():
         + "\n".join(sample)
     )
 
+    # Optional template
+    tpl = os.getenv("LLM_TEMPLATE", "profiles").lower()
+    tpl_map = {
+        "profiles": Path("templates/llm/profiles.txt"),
+        "drift": Path("templates/llm/drift.txt"),
+        "errors": Path("templates/llm/errors.txt"),
+    }
+    if tpl in tpl_map and tpl_map[tpl].exists():
+        intro = tpl_map[tpl].read_text(encoding="utf-8")
+        prompt = intro + "\n\n" + prompt
+
     out = try_llm(prompt)
     if not out:
         # Heuristic summary

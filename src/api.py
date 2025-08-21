@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel, Field
 from typing import List, Literal, Optional
 import json
@@ -108,22 +108,51 @@ def metrics_html(limit: int = 50):
 
 
 @app.get("/metrics/prom")
-def metrics_prom() -> str:
-    data = metrics_store.get_all()
-    lines = [
-        "# TYPE sqlumai_metric counter",
-        "# HELP sqlumai_metric SQLumAI counters (by key)",
-    ]
-    for k, v in data.items():
-        # Convert keys like rule:ID:action into label form
-        if k.startswith("rule:"):
-            parts = k.split(":", 2)
-            if len(parts) == 3:
-                _, rid, act = parts
-                lines.append(f'sqlumai_metric{{key="rule",rule="{rid}",action="{act}"}} {int(v)}')
-                continue
-        lines.append(f'sqlumai_metric{{key="{k}"}} {int(v)}')
-    return "\n".join(lines) + "\n"
+def metrics_prom():
+    try:
+        from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+        payload = generate_latest()  # includes our custom counters/histograms if imported
+        return Response(content=payload, media_type=CONTENT_TYPE_LATEST)
+    except Exception:
+        # Fallback to simple text exposition from JSON counters
+        data = metrics_store.get_all()
+        lines = [
+            "# TYPE sqlumai_metric counter",
+            "# HELP sqlumai_metric SQLumAI counters (by key)",
+        ]
+        for k, v in data.items():
+            if k.startswith("rule:"):
+                parts = k.split(":", 2)
+                if len(parts) == 3:
+                    _, rid, act = parts
+                    lines.append(f'sqlumai_metric{{key="rule",rule="{rid}",action="{act}"}} {int(v)}')
+                    continue
+            lines.append(f'sqlumai_metric{{key="{k}"}} {int(v)}')
+        return Response(content="\n".join(lines) + "\n", media_type="text/plain")
+
+@app.get("/insights.html")
+def insights_html():
+    # Render latest insights report if present
+    import glob
+    import html
+    files = sorted(glob.glob("reports/insights-*.md"))
+    if not files:
+        return Response(content="<html><body><h1>No insights yet</h1></body></html>", media_type="text/html")
+    text = open(files[-1], "r", encoding="utf-8").read()
+    # naive markdown to HTML (headings + list)
+    lines = []
+    for ln in text.splitlines():
+        if ln.startswith("# "):
+            lines.append(f"<h1>{html.escape(ln[2:])}</h1>")
+        elif ln.startswith("## "):
+            lines.append(f"<h2>{html.escape(ln[3:])}</h2>")
+        elif ln.startswith("- "):
+            lines.append(f"<li>{html.escape(ln[2:])}</li>")
+        else:
+            lines.append(f"<p>{html.escape(ln)}</p>")
+    body = "\n".join(lines)
+    html_doc = f"<html><body>{body}<hr/><p><a href='/rules'>Rules</a></p></body></html>"
+    return Response(content=html_doc, media_type="text/html")
 
 
 @app.get("/dryrun.html")

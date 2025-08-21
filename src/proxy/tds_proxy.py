@@ -6,6 +6,11 @@ from src.policy.loader import load_rules
 from src.policy.engine import PolicyEngine, Event
 from src.metrics import store as metrics_store
 from typing import Optional
+try:
+    from src.metrics.prom_registry import bytes_hist, latency_hist
+except Exception:
+    bytes_hist = None
+    latency_hist = None
 
 logger = logging.getLogger("tds_proxy")
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s %(name)s: %(message)s")
@@ -27,6 +32,11 @@ async def _pipe(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, dire
             data = await reader.read(65536)
             if not data:
                 break
+            try:
+                if bytes_hist:
+                    bytes_hist.observe(len(data))
+            except Exception:
+                pass
             tds_parser_on = os.getenv("ENABLE_TDS_PARSER", "false").lower() == "true"
             if tds_parser_on and direction == "c2s":
                 try:
@@ -265,6 +275,11 @@ async def _pipe(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, dire
             writer.write(data)
             await writer.drain()
             counter[direction] = counter.get(direction, 0) + len(data)
+            try:
+                if latency_hist:
+                    latency_hist.observe((time.time() - start_ts) * 1000.0)
+            except Exception:
+                pass
     except asyncio.CancelledError:
         raise
     except Exception as e:

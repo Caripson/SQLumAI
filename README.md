@@ -1,21 +1,31 @@
 # SQLumAI
-SQLumAI is an invisible, AI-powered proxy for Microsoft SQL Server.  
-It forwards all queries without delay, while capturing snapshots of requests and responses.  
-These snapshots are analyzed by a local LLM to uncover missing data, detect format issues,  
-highlight process gaps, and generate actionable insights – without ever blocking traffic.
+[![CI](https://github.com/Caripson/SQLumAI/actions/workflows/ci.yml/badge.svg)](https://github.com/Caripson/SQLumAI/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+SQLumAI is an invisible, AI‑powered proxy for Microsoft SQL Server.
+
+For non‑technical readers
+- What it does: Watches data flowing to SQL Server and helps improve data quality – without slowing anything down.
+- How it helps: Finds missing values, inconsistent formats (dates, phone numbers), and process gaps; proposes fixes and simpler input rules; summarizes issues daily.
+- Why it’s safe: It forwards traffic transparently by default (dry‑run). You control when to enforce rules.
+- Where AI fits: A local LLM turns raw events into a short list of high‑value actions and insights.
+
+Developed by Johan Caripson.
 
 ## Quick Start
 - Docker: `docker compose up` (starts SQL Server + proxy + API).
 - Local: `make setup` then `make dev`.
 - Tests: `make test` (and `make coverage`).
 
-## Capabilities
-- MVP 1 – Transparent pass‑through: `src/proxy/tds_proxy.py`, XEvents capture (`scripts/create_xevents.sql`), readers, aggregation, daily reports.
-- MVP 2 – Normalization + feedback: `agents/normalizers.py`, webhook publisher, simple catalogue via SQL parsing in aggregations.
-- MVP 3 – Gatekeeper scaffolding: rules API (`src/api.py`), policy engine (`src/policy/engine.py`), optional TLS termination (`src/proxy/tds_tls.py`), TDS header parsing (`src/tds/parser.py`).
-  - Inline enforcement (pattern-based): enable `ENABLE_SQL_TEXT_SNIFF=true` and set `ENFORCEMENT_MODE=enforce` to block by rule match; metrics exposed at `/metrics`.
-  - SQL Batch rewrite (simple): enable `ENABLE_TDS_PARSER=true` for column-level autocorrect/block on INSERT/UPDATE; multi-row INSERT supported.
-  - RPC NVARCHAR autocorrect (in-place): enable `RPC_AUTOCORRECT_INPLACE=true` (safe only when normalized value length ≤ original).
+## Capabilities (MVP 1–3)
+- MVP 1 – Transparent pass‑through: TCP proxy + XEvents readers (`scripts/create_xevents.sql`, `scripts/read_xevents.py`, `scripts/read_xel_files.py`), aggregation + daily reports.
+- MVP 2 – Normalization + feedback: `agents/normalizers.py` (date/phone/postal/email/country/orgnr), webhook feedback, LLM summaries.
+- MVP 3 – Gatekeeper: Rules API + engine, env‑gating, thresholds; optional TLS termination + TDS parsing for SQL Batch/RPC; simple column‑level autocorrect; metrics, audits, dashboards.
+  - Dry‑run vs enforce: `ENFORCEMENT_MODE=log|enforce`
+  - Parsers: `ENABLE_TDS_PARSER=true`, `ENABLE_SQL_TEXT_SNIFF=true`
+  - LLM: `LLM_PROVIDER`, `LLM_MODEL`, `LLM_ENDPOINT` (Ollama default), `OPENAI_API_KEY` (OpenAI-compatible)
+  - Scheduler: `ENABLE_SCHEDULER`, `SCHEDULE_INTERVAL_SEC`
+  - Docs overview: see `docs/mvp.md`
 
 See `AGENTS.md` for contributor guidelines and development conventions.
 
@@ -45,8 +55,12 @@ flowchart LR
 ```
 
 Docs
-- Browse docs in `docs/` or serve with `mkdocs serve` (see `mkdocs.yml`).
- - LLM config and providers: see `docs/llm-providers.md`.
+- Browse docs in `docs/` or serve with `mkdocs serve`.
+- MVPs: `docs/mvp.md`  |  Enforcement: `docs/ENFORCEMENT.md`  |  Architecture: `docs/architecture.md`
+- LLM config/providers: `docs/llm-providers.md`  |  Insights: `docs/insights.md`
+- Reports/Integration: `docs/howto-reports.md`, `docs/howto-integration.md`
+- Metrics dashboard: `docs/metrics-dashboard.md`
+- Test strategy: `docs/test-strategy.md`
 
 ## Nightly Scheduler (example)
 Set these in your `.env` or environment to run the full pipeline hourly (or nightly by setting a longer interval):
@@ -74,6 +88,11 @@ TLS termination for the proxy is optional. See `CERTS_README.md` for dev certs.
 Metrics
 - API exposes `/metrics` with simple counters: `allowed`, `autocorrect_suggested`, `blocks`.
 - Dry-run report: `python scripts/generate_dryrun_report.py` writes `reports/dryrun-YYYY-MM-DD.md` (also run by scheduler).
+ - Prometheus endpoint: `/metrics/prom` and Grafana dashboard via `make metrics-up`.
+
+## License
+
+MIT – see [LICENSE](LICENSE).
 
 ## Connection & DSN examples
 - ODBC: `Driver={ODBC Driver 18 for SQL Server};Server=localhost,61433;Database=master;UID=sa;PWD=...;Encrypt=no;`

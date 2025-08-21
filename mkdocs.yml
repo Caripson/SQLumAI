@@ -4,10 +4,13 @@ theme:
 nav:
   - Home: index.md
   - Architecture: architecture.md
+  - MVPs: mvp.md
   - Enforcement: enforcement.md
   - How-To: howto-reports.md
   - Integration: howto-integration.md
   - QA Checklist: qa-checklist.md
+  - Test Strategy: test-strategy.md
+  - Metrics Dashboard: metrics-dashboard.md
   - Dry-Run JSON: dryrun-json.md
   - Dry-Run Chart: dryrun-chart.md
   - LLM Providers: llm-providers.md

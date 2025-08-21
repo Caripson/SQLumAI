@@ -2,6 +2,11 @@ import json
 import os
 from threading import RLock
 from typing import Dict
+try:
+    from .prom_registry import inc_counter as prom_inc
+except Exception:
+    def prom_inc(key: str, rule: str | None = None, action: str | None = None, by: int = 1):
+        return
 
 _lock = RLock()
 _path = os.getenv("METRICS_PATH", "data/metrics/metrics.json")
@@ -33,6 +38,10 @@ def inc(key: str, by: int = 1):
         data = _read()
         data[key] = int(data.get(key, 0)) + by
         _write(data)
+    try:
+        prom_inc(key, None, None, by)
+    except Exception:
+        pass
 
 
 def get_all() -> Dict[str, int]:
@@ -42,6 +51,10 @@ def get_all() -> Dict[str, int]:
 
 def inc_rule_action(rule_id: str, action: str, by: int = 1):
     inc(f"rule:{rule_id}:{action}", by)
+    try:
+        prom_inc("rule", rule_id, action, by)
+    except Exception:
+        pass
 
 
 def get_rule_counters(rule_id: str) -> Dict[str, int]:
