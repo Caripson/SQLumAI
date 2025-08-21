@@ -316,7 +316,20 @@ class _TestEvent(BaseModel):
 
 @app.post("/rules/test")
 def rules_test(ev: _TestEvent):
-    rules = [_PRule(**r.model_dump()) for r in _read_rules()]
+    # Convert API Rule models to engine Rules, preserving known fields and optional extras
+    rules = []
+    for r in _read_rules():
+        raw = r.model_dump()
+        base = {k: raw.get(k) for k in ("id", "target", "selector", "action", "reason", "confidence", "enabled") if k in raw}
+        rule = _PRule(**base)
+        # Attach optional fields used by engine heuristics, if present
+        for extra in ("apply_in_envs", "min_hits_to_enforce"):
+            if extra in raw:
+                try:
+                    setattr(rule, extra, raw[extra])
+                except Exception:
+                    pass
+        rules.append(rule)
     pe = _PE(rules)
     dec = pe.decide(_PEvent(database=None, user=None, sql_text=ev.sql_text, table=ev.table, column=ev.column, value=ev.value))
     return dec.__dict__

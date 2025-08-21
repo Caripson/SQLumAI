@@ -46,9 +46,8 @@ def test_metrics_prom_success_branch(tmp_path, monkeypatch):
     )
     monkeypatch.setitem(sys.modules, "prometheus_client", fake)  # type: ignore[arg-type]
     resp = api.metrics_prom()
-    # In shim Response, .content is set
-    content = getattr(resp, "content", b"")
-    assert b"metric 1" in content or "metric 1" in str(content)
+    payload = getattr(resp, "body", None) or getattr(resp, "content", None) or b""
+    assert (hasattr(payload, "decode") and b"metric 1" in payload) or "metric 1" in str(payload)
 
 
 def test_rules_delete_success(tmp_path, monkeypatch):

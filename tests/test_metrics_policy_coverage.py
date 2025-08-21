@@ -83,7 +83,7 @@ def test_metrics_prom_fallback_lines(tmp_path, monkeypatch):
     api = importlib.import_module("src.api")
     importlib.reload(api)
     resp = api.metrics_prom()
-    content = resp.content if hasattr(resp, "content") else resp  # shim in minimal env
-    text = content.decode("utf-8") if hasattr(content, "decode") else str(content)
+    payload = getattr(resp, "body", None) or getattr(resp, "content", None) or resp
+    text = payload.decode("utf-8") if hasattr(payload, "decode") else str(payload)
     assert "sqlumai_metric{key=\"allowed\"} 5" in text
     assert "sqlumai_metric{key=\"rule\",rule=\"rX\",action=\"block\"} 2" in text
