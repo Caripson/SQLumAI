@@ -58,38 +58,24 @@ jobs:
           docker run --rm --network "$NET" mcr.microsoft.com/mssql-tools /opt/mssql-tools/bin/sqlcmd -S proxy,61433 -U sa -P 'Your_strong_Pa55' -Q "USE demo; SELECT COUNT(*) FROM T; EXEC dbo.Upd 1, '0707654321'; SELECT TOP 1 Phone FROM T WHERE Id=1;"
       - name: Fetch metrics
         run: |
-          curl -sf http://localhost:8080/metrics -o metrics.json
-          python - <<'PY'
-          import json
-          with open('metrics.json') as f:
-              m = json.load(f)
-          candidates = {
-              'rpc_seen': int(m.get('rpc_seen', 0)),
-              'autocorrect_suggested': int(m.get('autocorrect_suggested', 0)),
-              'allowed': int(m.get('allowed', 0)),
-          }
-          ok = any(v >= 1 for v in candidates.values())
-          assert ok, f"expected some activity, got: {candidates}"
-          print('activity OK:', candidates)
-PY
+          curl -sf http://localhost:8080/metrics | tee metrics.json
+          rpc=$(jq -r '.rpc_seen // 0' metrics.json)
+          ac=$(jq -r '.autocorrect_suggested // 0' metrics.json)
+          allowed=$(jq -r '.allowed // 0' metrics.json)
+          total=$((rpc + ac + allowed))
+          echo "activity counts: rpc_seen=$rpc autocorrect_suggested=$ac allowed=$allowed"
+          test $total -ge 1
       - name: Check dry-run aggregates
         run: |
           d=$(date -u +%F)
           curl -sf "http://localhost:8080/dryrun.json?date=$d" -o dry.json
+          jq -e '.rules | type=="object"' dry.json >/dev/null
       - name: LLM summary smoke test
         run: |
           # Create a tiny profile and run LLM summary inside the proxy container
           docker exec proxy /bin/bash -lc "mkdir -p data/aggregations; echo '{"'"dbo.T.Col"'"': {"'"count"'"': 1, "'"nulls"'"': 0, "'"suggestions"'"': {"'"phone"'"': 1}}}' > data/aggregations/field_profiles.json"
           docker exec proxy python scripts/llm_summarize_profiles.py
           docker exec proxy /bin/sh -lc "ls -1 reports/llm-summary-*.md"
-          python - <<'PY'
-          import json
-          with open('dry.json') as f:
-              data = json.load(f)
-          rules = data.get('rules', {})
-          assert isinstance(rules, dict) and len(rules) >= 0
-          print('dryrun.json OK, rules keys:', list(rules.keys())[:5])
-          PY
       - name: Tear down
         if: always()
         run: |
