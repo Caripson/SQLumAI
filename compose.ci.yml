@@ -3,3 +3,6 @@ services:
     environment:
       - ENFORCEMENT_MODE=enforce
       - RPC_REPACK_BUILDER=true
+      # For CI reliability, prefer sniffing over deep TDS parsing
+      - ENABLE_TDS_PARSER=false
+      - ENABLE_SQL_TEXT_SNIFF=true

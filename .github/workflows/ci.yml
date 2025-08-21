@@ -75,9 +75,9 @@ jobs:
               && break || { echo "retry seeding demo... ($i)"; sleep 2; }; \
           done
           # Run a simple flow via the proxy (with retries)
-          for i in {1..10}; do \
+          for i in {1..30}; do \
             docker run --rm --network "$NET" mcr.microsoft.com/mssql-tools \
-              /opt/mssql-tools/bin/sqlcmd -l 30 -S proxy,61433 -U sa -P 'Your_strong_Pa55' \
+              /opt/mssql-tools/bin/sqlcmd -l 60 -C -S proxy,61433 -U sa -P 'Your_strong_Pa55' \
               -Q "USE demo; SELECT COUNT(*) FROM T; EXEC dbo.Upd 1, '0707654321'; SELECT TOP 1 Phone FROM T WHERE Id=1;" \
               && break || { echo "retry via proxy... ($i)"; sleep 2; }; \
           done
