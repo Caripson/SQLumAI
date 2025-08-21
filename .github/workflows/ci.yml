@@ -25,9 +25,9 @@ jobs:
       - name: Validate policy rules
         run: |
           make validate-rules
-      - name: Run tests
+      - name: Run tests with coverage (min 60%)
         run: |
-          make test
+          python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=60
 
   integration:
     runs-on: ubuntu-latest

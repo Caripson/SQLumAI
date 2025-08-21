@@ -25,6 +25,7 @@ async def run_scheduler(stop_event: asyncio.Event):
     from scripts.publish_feedback import main as publish_feedback
     from scripts.generate_dryrun_report import main as dryrun_report
     from scripts.llm_summarize_profiles import main as llm_summary
+    from scripts.llm_insights import main as llm_insights
 
     while not stop_event.is_set():
         await _run_job(read_xevents, "xevents")
@@ -32,6 +33,7 @@ async def run_scheduler(stop_event: asyncio.Event):
         await _run_job(generate_report, "report")
         await _run_job(dryrun_report, "dryrun_report")
         await _run_job(llm_summary, "llm_summary")
+        await _run_job(llm_insights, "llm_insights")
         await _run_job(publish_feedback, "feedback")
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=interval_sec)

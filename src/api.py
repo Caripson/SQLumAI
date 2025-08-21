@@ -107,6 +107,25 @@ def metrics_html(limit: int = 50):
     return html
 
 
+@app.get("/metrics/prom")
+def metrics_prom() -> str:
+    data = metrics_store.get_all()
+    lines = [
+        "# TYPE sqlumai_metric counter",
+        "# HELP sqlumai_metric SQLumAI counters (by key)",
+    ]
+    for k, v in data.items():
+        # Convert keys like rule:ID:action into label form
+        if k.startswith("rule:"):
+            parts = k.split(":", 2)
+            if len(parts) == 3:
+                _, rid, act = parts
+                lines.append(f'sqlumai_metric{{key="rule",rule="{rid}",action="{act}"}} {int(v)}')
+                continue
+        lines.append(f'sqlumai_metric{{key="{k}"}} {int(v)}')
+    return "\n".join(lines) + "\n"
+
+
 @app.get("/dryrun.html")
 def dryrun_html(rule: str | None = None, action: str | None = None, date: str | None = None):
     # Aggregate decisions by rule and action for today

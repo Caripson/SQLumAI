@@ -36,6 +36,16 @@
     "confidence": 1.0
   },
   {
+    "id": "date-iso",
+    "target": "column",
+    "selector": "Date",
+    "action": "autocorrect",
+    "reason": "Use ISO dates (YYYY-MM-DD)",
+    "confidence": 0.9,
+    "apply_in_envs": ["dev"],
+    "min_hits_to_enforce": 5
+  },
+  {
     "id": "trim-whitespace-name",
     "target": "column",
     "selector": "dbo.Customers.Name",

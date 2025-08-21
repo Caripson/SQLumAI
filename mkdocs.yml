@@ -11,4 +11,6 @@ nav:
   - Dry-Run JSON: dryrun-json.md
   - Dry-Run Chart: dryrun-chart.md
   - LLM Providers: llm-providers.md
+  - Insights: insights.md
+  - Release: release.md
 docs_dir: docs
