@@ -95,7 +95,8 @@ def reconstruct_update(sql_text: str, columns: List[str], new_values: List[str])
         if re.match(r"^-?\d+(\.\d+)?$", v or ""):
             parts.append(f"{col} = {v}")
         else:
-            parts.append(f"{col} = '{v.replace("'","''")}'")
+            escaped = (v or "").replace("'", "''")
+            parts.append(f"{col} = '{escaped}'")
     return prefix + ", ".join(parts) + suffix
 
 
