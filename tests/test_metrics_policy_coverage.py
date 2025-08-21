@@ -73,7 +73,7 @@ def test_policy_engine_matching_and_env():
 def test_metrics_prom_fallback_lines(tmp_path, monkeypatch):
     # Force fallback path by inserting a dummy prometheus_client without required symbols
     dummy = ModuleType("prometheus_client")
-    sys.modules["prometheus_client"] = dummy
+    monkeypatch.setitem(sys.modules, "prometheus_client", dummy)
     monkeypatch.chdir(tmp_path)
     # Prepare metrics
     mdir = tmp_path / "data/metrics"
