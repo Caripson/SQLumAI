@@ -38,7 +38,11 @@ def try_llm(prompt: str) -> str | None:
         return None
     try:
         payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2}
-        r = httpx.post(endpoint, json=payload, timeout=30)
+        headers = {}
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        r = httpx.post(endpoint, json=payload, headers=headers or None, timeout=30)
         r.raise_for_status()
         data = r.json()
         if isinstance(data, dict):

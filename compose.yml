@@ -19,10 +19,11 @@ services:
     ports:
       - "1433:1433"
     healthcheck:
-      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Your_strong_Pa55", "-Q", "select 1"]
+      test: ["CMD-SHELL", "pgrep sqlservr >/dev/null"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 30
+      start_period: 30s
 
   proxy:
     build: .

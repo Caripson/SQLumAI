@@ -46,6 +46,7 @@ flowchart LR
 
 Docs
 - Browse docs in `docs/` or serve with `mkdocs serve` (see `mkdocs.yml`).
+ - LLM config and providers: see `docs/llm-providers.md`.
 
 ## Nightly Scheduler (example)
 Set these in your `.env` or environment to run the full pipeline hourly (or nightly by setting a longer interval):
