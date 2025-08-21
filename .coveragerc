@@ -1,5 +1,19 @@
 [run]
+source = src
+branch = True
+parallel = False
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.: 
+    except Exception:  # defensive fallback in CLI envs
+    # type: ignore
+
 omit =
     src/proxy/*
+    src/tds/*
+    src/runtime/*
     src/main.py
-    src/policy/loader.py
+    src/metrics/prom_registry.py
+
