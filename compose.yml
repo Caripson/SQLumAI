@@ -4,10 +4,11 @@ services:
     ports:
       - "11434:11434"
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      test: ["CMD-SHELL", "pgrep ollama >/dev/null || pgrep ollama-linux >/dev/null"]
       interval: 10s
       timeout: 5s
-      retries: 30
+      retries: 60
+      start_period: 20s
     volumes:
       - ollama:/root/.ollama
 
@@ -29,7 +30,7 @@ services:
     build: .
     depends_on:
       ollama:
-        condition: service_healthy
+        condition: service_started
       mssql:
         condition: service_healthy
     environment:

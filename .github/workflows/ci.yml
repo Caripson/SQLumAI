@@ -41,6 +41,8 @@ jobs:
           for i in {1..30}; do curl -sf http://localhost:8080/healthz && break || sleep 2; done
       - name: Pull LLM model via Ollama
         run: |
+          # Wait for Ollama API
+          for i in {1..60}; do curl -sf http://localhost:11434/api/tags && break || sleep 2; done
           # Pull llama3.2 model inside the ollama container (first run caches it)
           docker exec ollama ollama run llama3.2 -p "hi" || true
       - name: Add RPC autocorrect rule (Phone)
