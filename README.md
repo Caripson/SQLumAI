@@ -26,14 +26,14 @@ flowchart LR
     A[Apps/BI/ETL]
   end
   subgraph Proxy
-    P[SQLumAI Proxy<br/>(TCP/TLS, TDS header peek)]
+    P[SQLumAI Proxy - TCP/TLS TDS]
     API[Rules API]
   end
   subgraph SQL[Microsoft SQL Server]
-    XE[Extended Events<br/>(rpc_completed, sql_batch_completed)]
+    XE[Extended Events: rpc_completed + sql_batch_completed]
   end
   subgraph Analysis
-    R[Readers<br/>(XEvents ring/file)] --> AGG[Aggregation & Profiles]
+    R[Readers: XEvents ring/file] --> AGG[Aggregation & Profiles]
     AGG --> LLM[LLM Summaries]
     LLM --> FEED[Slack/Jira/Webhook]
   end
