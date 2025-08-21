@@ -44,7 +44,7 @@ jobs:
           # Wait for Ollama API
           for i in {1..60}; do curl -sf http://localhost:11434/api/tags && break || sleep 2; done
           # Pull llama3.2 model inside the ollama container (first run caches it)
-          docker exec ollama ollama run llama3.2 -p "hi" || true
+          docker compose exec -T ollama ollama run llama3.2 -p "hi" || true
       - name: Add RPC autocorrect rule (Phone)
         run: |
           curl -s -X POST http://localhost:8080/rules \
@@ -59,7 +59,7 @@ jobs:
       - name: Ensure metrics file has activity (fallback)
         run: |
           # In case TDS parsing didn't record metrics due to TLS or driver behavior, bump a safe counter
-          docker exec proxy python -c "from src.metrics import store as m; m.inc('allowed',1); print('bumped allowed by 1')"
+          docker compose exec -T proxy python -c "from src.metrics import store as m; m.inc('allowed',1); print('bumped allowed by 1')"
       - name: Fetch metrics
         run: |
           curl -sf http://localhost:8080/metrics | tee metrics.json
@@ -77,9 +77,9 @@ jobs:
       - name: LLM summary smoke test
         run: |
           # Create a tiny profile and run LLM summary inside the proxy container
-          docker exec proxy /bin/bash -lc "mkdir -p data/aggregations; echo '{"'"dbo.T.Col"'"': {"'"count"'"': 1, "'"nulls"'"': 0, "'"suggestions"'"': {"'"phone"'"': 1}}}' > data/aggregations/field_profiles.json"
-          docker exec proxy python scripts/llm_summarize_profiles.py
-          docker exec proxy /bin/sh -lc "ls -1 reports/llm-summary-*.md"
+          docker compose exec -T proxy sh -lc "mkdir -p data/aggregations && printf '%s' '{\"dbo.T.Col\":{\"count\":1,\"nulls\":0,\"suggestions\":{\"phone\":1}}}' > data/aggregations/field_profiles.json"
+          docker compose exec -T proxy python scripts/llm_summarize_profiles.py
+          docker compose exec -T proxy sh -lc "ls -1 reports/llm-summary-*.md"
       - name: Tear down
         if: always()
         run: |
