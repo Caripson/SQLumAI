@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage/
+htmlcov/
+
+# Envs & IDE
+.venv/
+venv/
+.env
+.env.*
+.idea/
+.vscode/
+.DS_Store
+
+# Build/Dist
+build/
+dist/
+*.egg-info/
+
+# Project data/outputs
+data/metrics/
+data/xevents/raw/
+reports/
+
+# Cache bytecode anywhere
+**/__pycache__/
+
