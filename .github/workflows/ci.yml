@@ -60,14 +60,27 @@ jobs:
               /opt/mssql-tools/bin/sqlcmd -S mssql -U sa -P 'Your_strong_Pa55' -Q "SELECT 1" \
               && break || { echo "waiting for mssql... ($i)"; sleep 2; }; \
           done
-          # Seed demo database (increase login timeout to be safe)
-          docker run --rm --network "$NET" mcr.microsoft.com/mssql-tools \
-            /opt/mssql-tools/bin/sqlcmd -l 30 -S mssql -U sa -P 'Your_strong_Pa55' \
-            -Q "CREATE DATABASE demo; USE demo; CREATE TABLE T(Id INT, Phone NVARCHAR(32)); CREATE PROC dbo.Upd @Id INT, @Phone NVARCHAR(32) AS BEGIN UPDATE T SET Phone=@Phone WHERE Id=@Id; END; INSERT INTO T VALUES (1,'0701234567');"
-          # Run a simple flow via the proxy
-          docker run --rm --network "$NET" mcr.microsoft.com/mssql-tools \
-            /opt/mssql-tools/bin/sqlcmd -l 30 -S proxy,61433 -U sa -P 'Your_strong_Pa55' \
-            -Q "USE demo; SELECT COUNT(*) FROM T; EXEC dbo.Upd 1, '0707654321'; SELECT TOP 1 Phone FROM T WHERE Id=1;"
+          # Ensure demo DB exists (idempotent) and wait until ONLINE
+          for i in {1..30}; do \
+            docker run --rm --network "$NET" mcr.microsoft.com/mssql-tools \
+              /opt/mssql-tools/bin/sqlcmd -l 30 -S mssql -U sa -P 'Your_strong_Pa55' \
+              -Q "IF DB_ID('demo') IS NULL CREATE DATABASE demo; SELECT db_id('demo')" \
+              | tee /dev/stderr | grep -qE '^[0-9]+$' && break || { echo "waiting for demo DB... ($i)"; sleep 2; }; \
+          done
+          # Create schema and seed data with retries (database might be initializing)
+          for i in {1..10}; do \
+            docker run --rm --network "$NET" mcr.microsoft.com/mssql-tools \
+              /opt/mssql-tools/bin/sqlcmd -l 30 -S mssql -U sa -P 'Your_strong_Pa55' \
+              -Q "USE demo; IF OBJECT_ID('dbo.T') IS NULL CREATE TABLE T(Id INT, Phone NVARCHAR(32)); IF OBJECT_ID('dbo.Upd') IS NULL EXEC('CREATE PROC dbo.Upd @Id INT, @Phone NVARCHAR(32) AS BEGIN UPDATE T SET Phone=@Phone WHERE Id=@Id; END'); IF NOT EXISTS (SELECT 1 FROM T WHERE Id=1) INSERT INTO T VALUES (1,'0701234567'); SELECT COUNT(*) FROM T" \
+              && break || { echo "retry seeding demo... ($i)"; sleep 2; }; \
+          done
+          # Run a simple flow via the proxy (with retries)
+          for i in {1..10}; do \
+            docker run --rm --network "$NET" mcr.microsoft.com/mssql-tools \
+              /opt/mssql-tools/bin/sqlcmd -l 30 -S proxy,61433 -U sa -P 'Your_strong_Pa55' \
+              -Q "USE demo; SELECT COUNT(*) FROM T; EXEC dbo.Upd 1, '0707654321'; SELECT TOP 1 Phone FROM T WHERE Id=1;" \
+              && break || { echo "retry via proxy... ($i)"; sleep 2; }; \
+          done
       - name: Ensure metrics file has activity (fallback)
         run: |
           # In case TDS parsing didn't record metrics due to TLS or driver behavior, bump a safe counter
