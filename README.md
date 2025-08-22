@@ -6,7 +6,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
-  <img src="assets/logo.svg" alt="SQLumAI logo" width="560" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-white.svg" />
+    <img src="assets/logo.svg" alt="SQLumAI logo" width="560" />
+  </picture>
   <br/>
   <em>Transparent AI proxy for Microsoft SQL Server</em>
   <br/>
