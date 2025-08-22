@@ -1,5 +1,4 @@
 import importlib
-import os
 
 
 def test_decisions_append_and_tail(tmp_path, monkeypatch):

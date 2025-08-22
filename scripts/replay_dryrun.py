@@ -10,7 +10,7 @@ import json
 import datetime as dt
 from pathlib import Path
 from collections import defaultdict, Counter
-from src.policy.engine import PolicyEngine, Event, Rule
+from src.policy.engine import PolicyEngine, Event
 from src.policy.loader import load_rules
 from src.metrics import store as metrics_store
 

@@ -1,10 +1,9 @@
 import importlib
-import json
 import pytest
 
 
 fastapi = pytest.importorskip("fastapi")
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # noqa: E402
 
 
 def setup_app(tmp_path, monkeypatch):
@@ -30,4 +29,3 @@ def test_gitops_rules_diff_and_promote(tmp_path, monkeypatch):
     # Current rules should include p1
     cur = c.get("/rules").json()
     assert any(x.get("id") == "p1" for x in cur)
-

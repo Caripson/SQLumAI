@@ -18,13 +18,13 @@
     <br/>
 </p>
 
-SQLumAI is an invisible, AI‑powered proxy for Microsoft SQL Server.
+SQLumAI is an invisible proxy for Microsoft SQL Server with out‑of‑band AI insights.
 
 For non‑technical readers
 - What it does: Watches data flowing to SQL Server and helps improve data quality – without slowing anything down.
 - How it helps: Finds missing values, inconsistent formats (dates, phone numbers), and process gaps; proposes fixes and simpler input rules; summarizes issues daily.
 - Why it’s safe: It forwards traffic transparently by default (dry‑run). You control when to enforce rules.
-- Where AI fits: A local LLM turns raw events into a short list of high‑value actions and insights.
+- Where AI fits: A local LLM turns raw events into a short list of high‑value actions and insights (generated asynchronously, not inline).
 
 ### Dependencies
 - ![FastAPI](https://img.shields.io/pypi/v/fastapi?label=fastapi) ![Uvicorn](https://img.shields.io/pypi/v/uvicorn?label=uvicorn) ![Pydantic](https://img.shields.io/pypi/v/pydantic?label=pydantic) ![HTTPX](https://img.shields.io/pypi/v/httpx?label=httpx) ![prometheus_client](https://img.shields.io/pypi/v/prometheus_client?label=prometheus_client)
@@ -40,7 +40,7 @@ For non‑technical readers
 - MVP 3 – Gatekeeper: Rules API + engine, env‑gating, thresholds; optional TLS termination + TDS parsing for SQL Batch/RPC; simple column‑level autocorrect; metrics, audits, dashboards.
   - Dry‑run vs enforce: `ENFORCEMENT_MODE=log|enforce`
   - Parsers: `ENABLE_TDS_PARSER=true`, `ENABLE_SQL_TEXT_SNIFF=true`
-  - LLM: `LLM_PROVIDER`, `LLM_MODEL`, `LLM_ENDPOINT` (Ollama default), `OPENAI_API_KEY` (OpenAI-compatible)
+  - LLM: `LLM_PROVIDER`, `LLM_MODEL`, `LLM_ENDPOINT` (Ollama default), `OPENAI_API_KEY` (OpenAI-compatible). LLM runs async via scheduler jobs.
   - Scheduler: `ENABLE_SCHEDULER`, `SCHEDULE_INTERVAL_SEC`
   - Docs overview: see `docs/mvp.md`
 
@@ -52,7 +52,7 @@ For non‑technical readers
   - NL→Rule suggestion: `POST /rules/suggest` returns a proposed rule JSON from plain text.
   - XEvents helper API: `POST /xevents/setup?mode=ring|file` returns a ready-to-run SQL session script.
   - XEvents setup helper: `scripts/setup_xevents.py` renders a session SQL for ring buffer or file targets.
-  - Secrets provider: `src/runtime/secrets.py` with `SECRET_PROVIDER=env|file`.
+  - Secrets provider: `src/runtime/secrets.py` with `SECRET_PROVIDER=env|file` and `SECRET_PROVIDER_MODE=permissive|strict`.
 
 See `AGENTS.md` for contributor guidelines and development conventions.
 
@@ -81,9 +81,18 @@ flowchart LR
   API --> P
 ```
 
+### Real‑time vs Async AI
+- Real‑time: The proxy applies deterministic rules to decide allow/autocorrect/block. No LLM calls occur on the hot path.
+- Async: Scheduler jobs read aggregated data and generate insights and proposed rules with an LLM.
+- Safety: Local‑first by default; no external LLM traffic unless explicitly configured.
+
+### TDS Parser Support
+- Minimal, best‑effort parsing of Batch and RPC to keep the hot path safe.
+- See `docs/ENFORCEMENT.md` for current scope, limitations, and roadmap.
+
 Docs
 - Browse docs in `docs/` or serve with `mkdocs serve`.
-- MVPs: `docs/mvp.md`  |  Enforcement: `docs/ENFORCEMENT.md`  |  Architecture: `docs/architecture.md` | HA: `docs/ha.md`
+- MVPs: `docs/mvp.md`  |  Enforcement: `docs/ENFORCEMENT.md`  |  TDS Support: `docs/tds-parser.md`  |  Architecture: `docs/architecture.md` | HA: `docs/ha.md`
 - LLM config/providers: `docs/llm-providers.md`  |  Insights: `docs/insights.md`
 - Reports/Integration: `docs/howto-reports.md`, `docs/howto-integration.md`
 - Metrics dashboard: `docs/metrics-dashboard.md`
@@ -177,7 +186,7 @@ curl -s -X POST http://localhost:8080/rules \
 # Suggest a rule from natural language (stub)
 curl -s -X POST http://localhost:8080/rules/suggest \
   -H 'Content-Type: application/json' \
-  -d '{"text":"Alla svenska telefonnummer ska normaliseras"}' | jq .
+  -d '{"text":"Normalize all Swedish phone numbers"}' | jq .
 ```
 
 ## Usage Scenarios: BSS, Booking, ServiceNow, CRM
@@ -210,7 +219,7 @@ Principles:
 [
   {"id":"bss-phone-autocorrect","target":"column","selector":"dbo.Customers.Phone","action":"autocorrect","reason":"Normalize E.164","confidence":0.9},
   {"id":"bss-email-required","target":"column","selector":"dbo.Customers.Email","action":"block","reason":"Email required at onboarding","confidence":1.0},
-  {"id":"bss-no-test-subs","target":"pattern","selector":"INSERT INTO dbo.Subscriptions","action":"block","reason":"Stoppa testabonnemang i prod","confidence":0.9}
+  {"id":"bss-no-test-subs","target":"pattern","selector":"INSERT INTO dbo.Subscriptions","action":"block","reason":"Block test subscriptions in production","confidence":0.9}
 ]
 ```
 - LLM insights (examples):
@@ -225,7 +234,7 @@ Principles:
 ```json
 [
   {"id":"booking-no-overlap","target":"pattern","selector":"INSERT INTO dbo.Bookings","action":"block","reason":"Overlapping times must be prevented in app logic","confidence":0.8},
-  {"id":"booking-email-format","target":"column","selector":"dbo.Bookings.Email","action":"autocorrect","reason":"Korrigera vanliga typos","confidence":0.7}
+  {"id":"booking-email-format","target":"column","selector":"dbo.Bookings.Email","action":"autocorrect","reason":"Correct common typos","confidence":0.7}
 ]
 ```
 - LLM insights (examples):

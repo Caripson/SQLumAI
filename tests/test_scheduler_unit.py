@@ -1,7 +1,5 @@
 import asyncio
 import logging
-import types
-import importlib
 
 
 def test_run_job_paths(caplog):

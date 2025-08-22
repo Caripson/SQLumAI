@@ -1,7 +1,5 @@
-import os
 import importlib
 import json
-from pathlib import Path
 
 
 def test_llm_insights_fallback(tmp_path, monkeypatch):

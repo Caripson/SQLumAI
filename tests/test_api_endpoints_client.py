@@ -1,10 +1,9 @@
-import os
 import importlib
 import pytest
 
 
 fastapi = pytest.importorskip("fastapi")
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # noqa: E402
 
 
 def setup_app(tmp_path, monkeypatch):
@@ -32,4 +31,3 @@ def test_xevents_setup_and_suggest(tmp_path, monkeypatch):
     assert r.status_code == 200 and "CREATE EVENT SESSION" in r.json().get("sql", "")
     s = c.post("/rules/suggest", json={"text": "Email måste vara obligatorisk"})
     assert s.status_code == 200 and s.json().get("target") in ("column", "pattern")
-

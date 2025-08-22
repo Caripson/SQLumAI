@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import time
+import contextlib
 from src.policy.loader import load_rules
 from src.policy.engine import PolicyEngine, Event
 from src.metrics import store as metrics_store
@@ -314,9 +315,6 @@ async def handle_client(local_reader: asyncio.StreamReader, local_writer: asynci
             await t
 
     logger.info(f"{conn_id} closed bytes c2s={counter.get('c2s',0)} s2c={counter.get('s2c',0)}")
-
-
-import contextlib
 
 
 async def run_proxy(listen_host: str, listen_port: int, upstream_host: str, upstream_port: int, stop_event: Optional[asyncio.Event] = None):

@@ -1,5 +1,4 @@
 import importlib
-import os
 
 
 def test_metrics_store_inc(tmp_path, monkeypatch):

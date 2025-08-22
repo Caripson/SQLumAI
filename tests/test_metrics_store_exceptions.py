@@ -1,5 +1,4 @@
 import importlib
-import os
 
 
 def test_metrics_store_exceptions(tmp_path, monkeypatch):

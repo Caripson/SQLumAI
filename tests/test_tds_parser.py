@@ -1,4 +1,4 @@
-from src.tds.parser import parse_header, iter_packets, extract_sqlbatch_text, type_name
+from src.tds.parser import iter_packets, extract_sqlbatch_text, type_name
 
 
 def test_parse_header_and_iter_packets():

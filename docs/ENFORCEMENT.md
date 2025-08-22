@@ -19,14 +19,14 @@ This document explains how SQLumAI evolves from passive monitoring to selective,
 - Policy engine: For each candidate value, evaluate rules in order; emit decision (allow/autocorrect/block) + reason + confidence.
 
 ### SQL Batch (0x01)
-- Reassembly of full batch, decode as UTF‑16LE; apply pattern/table rules.
-- Column‑level mapping for simple INSERT/UPDATE via regex parser; safe rewrite of SQL text when `ENFORCEMENT_MODE=enforce`.
-- Multirow INSERT stöd: omskrivning av `(…), (…)` block när kolumn‑värde‑antal matchar.
+- Reassemble full batch, decode as UTF‑16LE; apply pattern/table rules.
+- Column‑level mapping for simple INSERT/UPDATE via a best‑effort regex parser; safe SQL text rewrite when `ENFORCEMENT_MODE=enforce`.
+- Multirow INSERT support: rewrite `(…), (…)` groups when the number of columns matches the number of values.
 
 ### RPC (0x03)
-- Reassembly av RPC payload; heuristisk extraktion av NVARCHAR‑parametrar.
-- In‑place autocorrect (utf‑16le) när nya värdet inte är längre än det gamla (kortare pad: spaces) när `RPC_AUTOCORRECT_INPLACE=true`.
-- Blockering av RPC vid regelmatchning när `ENFORCEMENT_MODE=enforce`.
+- Reassemble RPC payload; heuristic extraction of NVARCHAR parameters.
+- In‑place autocorrect (utf‑16le) when the new value is not longer than the original (shorter padded with spaces) when `RPC_AUTOCORRECT_INPLACE=true`.
+- Block RPC on rule match when `ENFORCEMENT_MODE=enforce`.
 
 ## Traceability & Safety
 - Logging: Every correction/block records rule id, reason, confidence, original and resulting value.
@@ -40,8 +40,14 @@ This document explains how SQLumAI evolves from passive monitoring to selective,
 4) Monitor: Track metrics (auto‑corrections, blocks, false positives) to tune thresholds.
 
 ## Feature flags / Env gating
-- Per‑regel: `enabled: true/false`, `apply_in_envs: ["dev","staging","prod"]` för att styra var regler gäller.
-- Globala toggles: `ENABLE_TDS_PARSER`, `ENABLE_SQL_TEXT_SNIFF`, `ENFORCEMENT_MODE`, `RPC_AUTOCORRECT_INPLACE`, `TIME_BUDGET_MS`, `MAX_REWRITE_BYTES`.
+- Per‑rule controls: `enabled: true/false`, `apply_in_envs: ["dev","staging","prod"]` to limit where rules apply.
+- Global toggles: `ENABLE_TDS_PARSER`, `ENABLE_SQL_TEXT_SNIFF`, `ENFORCEMENT_MODE`, `RPC_AUTOCORRECT_INPLACE`, `TIME_BUDGET_MS`, `MAX_REWRITE_BYTES`.
+
+## TDS Parser Scope and Risk
+- SQL Server’s TDS protocol is complex. SQLumAI’s parsing is intentionally minimal and best‑effort to keep the hot path safe.
+- Supported today: UTF‑16LE batch text for simple INSERT/UPDATE matching and heuristic NVARCHAR RPC parameter extraction.
+- Not guaranteed: unusual datatypes, vendor‑specific RPCs, newer protocol nuances. On parse failure, the proxy fails open and logs context.
+- Roadmap: consider contributing to or integrating a robust external TDS library. Contributions welcome.
 
 ## Performance
 - Keep parsing minimal (batch/statement only); avoid heavy transforms on the hot path.

@@ -142,7 +142,9 @@ def build_rpc_payload(proc_name: str, params: List[Tuple[str, str, str]]) -> byt
             # encode as 100ns ticks since midnight
             try:
                 parts = str(value).split(":")
-                hh = int(parts[0]); mm = int(parts[1]); ss = int(parts[2].split(".")[0])
+                hh = int(parts[0])
+                mm = int(parts[1])
+                ss = int(parts[2].split(".")[0])
                 frac = parts[2].split(".")[1] if "." in parts[2] else "0"
                 frac = int((frac + "0" * 7)[:7])
                 ticks = ((hh * 3600 + mm * 60 + ss) * 10_000_000) + frac
@@ -162,7 +164,8 @@ def build_rpc_payload(proc_name: str, params: List[Tuple[str, str, str]]) -> byt
                 seconds = dtv.hour * 3600 + dtv.minute * 60 + dtv.second
                 ticks = seconds * 10_000_000 + int(dtv.microsecond * 10)
             except Exception:
-                days = 0; ticks = 0
+                days = 0
+                ticks = 0
             out += int(ticks).to_bytes(5, byteorder="little", signed=False)
             out += int(days).to_bytes(3, byteorder="little", signed=False)
         elif t in ("datetimeoffset",):
@@ -184,7 +187,9 @@ def build_rpc_payload(proc_name: str, params: List[Tuple[str, str, str]]) -> byt
                 # offset minutes
                 off = dtv.utcoffset().total_seconds() // 60 if dtv.utcoffset() else 0
             except Exception:
-                days = 0; ticks = 0; off = 0
+                days = 0
+                ticks = 0
+                off = 0
             out += int(ticks).to_bytes(5, byteorder="little", signed=False)
             out += int(days).to_bytes(3, byteorder="little", signed=False)
             out += int(off).to_bytes(2, byteorder="little", signed=True)

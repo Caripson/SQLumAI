@@ -1,54 +1,54 @@
 try:
     from fastapi import FastAPI, HTTPException, Response
-except Exception:  # minimal shim for environments without fastapi
-    class HTTPException(Exception):
-        def __init__(self, status_code: int = 500, detail: str = ""):
-            super().__init__(detail)
-            self.status_code = status_code
+except Exception:  # minimal shim for environments without fastapi  # pragma: no cover
+    class HTTPException(Exception):  # pragma: no cover
+        def __init__(self, status_code: int = 500, detail: str = ""):  # pragma: no cover
+            super().__init__(detail)  # pragma: no cover
+            self.status_code = status_code  # pragma: no cover
 
-    class Response:  # type: ignore
-        def __init__(self, content: str | bytes = b"", media_type: str = "text/html"):
-            self.content = content
-            self.media_type = media_type
-            # For tests accessing body
-            try:
-                self.body = content if isinstance(content, bytes) else str(content).encode("utf-8")
-            except Exception:
-                self.body = b""
+    class Response:  # type: ignore  # pragma: no cover
+        def __init__(self, content: str | bytes = b"", media_type: str = "text/html"):  # pragma: no cover
+            self.content = content  # pragma: no cover
+            self.media_type = media_type  # pragma: no cover
+            # For tests accessing body  # pragma: no cover
+            try:  # pragma: no cover
+                self.body = content if isinstance(content, bytes) else str(content).encode("utf-8")  # pragma: no cover
+            except Exception:  # pragma: no cover
+                self.body = b""  # pragma: no cover
 
-    class DummyApp:
-        def __init__(self, *_, **__):
-            pass
+    class DummyApp:  # pragma: no cover
+        def __init__(self, *_, **__):  # pragma: no cover
+            pass  # pragma: no cover
 
-        def get(self, *_args, **_kwargs):
-            def deco(fn):
-                return fn
-            return deco
+        def get(self, *_args, **_kwargs):  # pragma: no cover
+            def deco(fn):  # pragma: no cover
+                return fn  # pragma: no cover
+            return deco  # pragma: no cover
 
-        def post(self, *_args, **_kwargs):
-            def deco(fn):
-                return fn
-            return deco
+        def post(self, *_args, **_kwargs):  # pragma: no cover
+            def deco(fn):  # pragma: no cover
+                return fn  # pragma: no cover
+            return deco  # pragma: no cover
 
-        def delete(self, *_args, **_kwargs):
-            def deco(fn):
-                return fn
-            return deco
+        def delete(self, *_args, **_kwargs):  # pragma: no cover
+            def deco(fn):  # pragma: no cover
+                return fn  # pragma: no cover
+            return deco  # pragma: no cover
 
-    FastAPI = DummyApp  # type: ignore
+    FastAPI = DummyApp  # type: ignore  # pragma: no cover
 try:
     from pydantic import BaseModel, Field
-except Exception:  # minimal shim for environments without pydantic
-    class BaseModel:  # type: ignore
-        def __init__(self, **data):
-            for k, v in data.items():
-                setattr(self, k, v)
+except Exception:  # minimal shim for environments without pydantic  # pragma: no cover
+    class BaseModel:  # type: ignore  # pragma: no cover
+        def __init__(self, **data):  # pragma: no cover
+            for k, v in data.items():  # pragma: no cover
+                setattr(self, k, v)  # pragma: no cover
 
-        def model_dump(self):
-            return {k: getattr(self, k) for k in self.__dict__.keys()}
+        def model_dump(self):  # pragma: no cover
+            return {k: getattr(self, k) for k in self.__dict__.keys()}  # pragma: no cover
 
-    def Field(default=None, **_):  # type: ignore
-        return default
+    def Field(default=None, **_):  # type: ignore  # pragma: no cover
+        return default  # pragma: no cover
 from typing import List, Literal, Optional
 import json
 import os
@@ -59,8 +59,8 @@ from src.policy.engine import PolicyEngine as _PE, Rule as _PRule, Event as _PEv
 from scripts.setup_xevents import render_xevents_sql
 try:
     from src.version import __version__
-except Exception:
-    __version__ = "0.0.0"
+except Exception:  # pragma: no cover
+    __version__ = "0.0.0"  # pragma: no cover
 
 app = FastAPI(title="SQLumAI Policy API", version=__version__)
 

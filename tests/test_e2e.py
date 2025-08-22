@@ -32,7 +32,6 @@ def test_e2e_reports_and_api(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     # Generate reports
-    import importlib
     import scripts.generate_daily_report as daily
     import scripts.generate_dryrun_report as dry
     import scripts.llm_summarize_profiles as llm

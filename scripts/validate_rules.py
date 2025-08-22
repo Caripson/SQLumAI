@@ -7,7 +7,7 @@ Exits with non-zero status if validation fails.
 import json
 import sys
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Tuple
 
 
 def main():

@@ -1,7 +1,6 @@
 import asyncio
 import sys
 import types
-import pytest
 
 
 def test_run_scheduler_one_cycle(monkeypatch):

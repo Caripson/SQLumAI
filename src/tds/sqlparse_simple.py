@@ -1,5 +1,5 @@
 import re
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional
 
 
 def extract_table_and_columns(sql_text: str) -> Tuple[Optional[str], List[str]]:
