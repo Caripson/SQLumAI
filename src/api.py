@@ -57,8 +57,12 @@ from src.metrics import store as metrics_store
 from src.metrics import decisions as decisions_store
 from src.policy.engine import PolicyEngine as _PE, Rule as _PRule, Event as _PEvent
 from scripts.setup_xevents import render_xevents_sql
+try:
+    from src.version import __version__
+except Exception:
+    __version__ = "0.0.0"
 
-app = FastAPI(title="SQLumAI Policy API", version="0.1.0")
+app = FastAPI(title="SQLumAI Policy API", version=__version__)
 
 RULES_PATH = os.getenv("RULES_PATH", "config/rules.json")
 PROPOSED_RULES_PATH = os.getenv("PROPOSED_RULES_PATH", "config/rules_proposed.json")
@@ -120,7 +124,12 @@ def delete_rule(rule_id: str):
 
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok"}
+    return {"status": "ok", "version": __version__}
+
+
+@app.get("/version")
+def version():
+    return {"version": __version__}
 
 
 @app.get("/metrics")

@@ -2,6 +2,11 @@ import asyncio
 import os
 import signal
 from dotenv import load_dotenv
+import sys
+try:
+    from src.version import __version__
+except Exception:
+    __version__ = "0.0.0"
 
 from src.proxy.tds_proxy import run_proxy
 from src.proxy.tds_tls import run_tls_terminating_proxy
@@ -11,6 +16,8 @@ from src.runtime.scheduler import run_scheduler
 
 async def main() -> None:
     load_dotenv()
+    # Startup log with version for visibility
+    print(f"[sqlumai] starting version {__version__}")
     listen_host = os.getenv("PROXY_LISTEN_ADDR", "0.0.0.0")
     listen_port = int(os.getenv("PROXY_LISTEN_PORT", "61433"))
     sql_host = os.getenv("SQL_HOST", "localhost")
@@ -53,6 +60,9 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    if "--version" in sys.argv or "-V" in sys.argv:
+        print(__version__)
+        raise SystemExit(0)
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
