@@ -3,10 +3,11 @@ SHELL := /bin/bash
 PY ?= python3
 PIP ?= pip3
 
-.PHONY: help setup dev test fmt lint coverage clean clean-all clean-reports clean-metrics
+.PHONY: help setup dev test fmt lint coverage clean clean-all clean-reports clean-metrics version bump-version tag-release
 
 help: ## Show common targets
 	@echo "Targets: setup, dev, test, test-85, test-90, fmt, lint, coverage, validate-rules, report-dryrun, simulate, docs-serve, llm-pull, integration-up, integration-up-ci, integration-down, metrics-up, metrics-down, clean, clean-all"
+ 	@echo "Version: version, bump-version NEW=x.y.z, tag-release"
 
 setup: ## Install dependencies across supported stacks
 	@echo "[setup] Installing dependencies (best-effort)..."
@@ -148,3 +149,31 @@ metrics-up: ## Start Prometheus+Grafana profile (requires integration-up)
 metrics-down: ## Stop Prometheus+Grafana
 	@echo "[monitoring] Stopping Prometheus and Grafana..."
 	docker compose -f compose.metrics.yml down -v
+
+version: ## Print project version
+	@$(PY) - << 'PY'
+from src.version import __version__
+print(__version__)
+PY
+
+# Usage: make bump-version NEW=0.1.1
+bump-version: ## Bump version in src/version.py, README badge, and Dockerfile ARG
+	@if [ -z "$(NEW)" ]; then echo "Usage: make bump-version NEW=x.y.z"; exit 1; fi
+	@echo "[version] Bumping to $(NEW)"
+	@$(PY) - << PY
+from pathlib import Path
+import re
+p = Path('src/version.py')
+txt = p.read_text(encoding='utf-8')
+txt = re.sub(r"__version__\s*=\s*\"[^\"]+\"", f'__version__ = "$(NEW)"', txt)
+p.write_text(txt, encoding='utf-8')
+PY
+	@sed -i.bak -E "s|(badge/version-)[0-9]+\.[0-9]+\.[0-9]+|\1$(NEW)|" README.md && rm -f README.md.bak
+	@sed -i.bak -E "s/^ARG VERSION=.*/ARG VERSION=$(NEW)/" Dockerfile && rm -f Dockerfile.bak
+	@git add src/version.py README.md Dockerfile && git commit -m "chore(version): bump to $(NEW)"
+	@echo "[version] Bumped to $(NEW). Consider tagging: make tag-release"
+
+tag-release: ## Create and push git tag v<version> from src/version.py
+	@v=$$($(PY) -c 'from src.version import __version__; print(__version__)'); \
+	echo "Tagging v$$v"; \
+	git tag -a v$$v -m "v$$v" && git push origin v$$v

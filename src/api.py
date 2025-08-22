@@ -163,6 +163,8 @@ def metrics_html(limit: int = 50):
         <tr><th>Time (UTC)</th><th>Action</th><th>Rule</th><th>Reason</th></tr>
         {rows}
       </table>
+      <hr/>
+      <p style="color:#666;font-size:12px;">SQLumAI version {__version__}</p>
     </body></html>
     """
     return html
