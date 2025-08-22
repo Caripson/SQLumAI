@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 256" role="img" aria-label="SQLumAI logo">
+  <title>SQLumAI Logo</title>
+  <style>
+    :root { --accent: #6366F1; } /* Indigo */
+    .outer { opacity: .25; }
+    .stroke { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+    .accent { stroke: var(--accent); }
+    .word { fill: currentColor; font: 700 96px/1.1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; letter-spacing: -1px; }
+    .sub { fill: currentColor; opacity:.55; font: 500 22px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", sans-serif; }
+  </style>
+
+  <!-- ICON (same as icon.svg), positioned on the left -->
+  <g transform="translate(0,0)">
+    <g class="outer">
+      <g transform="rotate(45 128 128)">
+        <rect x="64" y="64" width="128" height="128" rx="28"
+              class="stroke" stroke-width="10"/>
+      </g>
+    </g>
+
+    <circle cx="128" cy="128" r="68"
+            class="stroke" stroke-width="12"
+            stroke-dasharray="410 60" stroke-dashoffset="320"/>
+
+    <line x1="104" y1="116" x2="156" y2="116" class="stroke" stroke-width="10"/>
+    <line x1="100" y1="128" x2="152" y2="128" class="stroke" stroke-width="10"/>
+    <line x1="108" y1="140" x2="160" y2="140" class="stroke" stroke-width="10"/>
+
+    <path d="M166 150 L190 174" class="stroke accent" stroke-width="16" />
+  </g>
+
+  <!-- WORDMARK -->
+  <g transform="translate(288, 144)">
+    <text class="word">SQLum<tspan fill="var(--accent)">AI</tspan></text>
+    <text class="sub" y="44">Transparent AI proxy for Microsoft SQL Server</text>
+  </g>
+</svg>
+

@@ -5,6 +5,15 @@
 [![Python](https://img.shields.io/badge/Python-3.10%20|%203.11%20|%203.12-3776AB?logo=python&logoColor=white)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+<p align="center">
+  <img src="assets/logo.svg" alt="SQLumAI logo" width="560" />
+  <br/>
+  <em>Transparent AI proxy for Microsoft SQL Server</em>
+  <br/>
+  <sub>Developed by Johan Caripson</sub>
+  <br/>
+</p>
+
 SQLumAI is an invisible, AI‑powered proxy for Microsoft SQL Server.
 
 For non‑technical readers
