@@ -25,9 +25,7 @@ For non‑technical readers
 - Why it’s safe: It forwards traffic transparently by default (dry‑run). You control when to enforce rules.
 - Where AI fits: A local LLM turns raw events into a short list of high‑value actions and insights.
 
-Developed by Johan Caripson.
-
-Dependencies
+### Dependencies
 - ![FastAPI](https://img.shields.io/pypi/v/fastapi?label=fastapi) ![Uvicorn](https://img.shields.io/pypi/v/uvicorn?label=uvicorn) ![Pydantic](https://img.shields.io/pypi/v/pydantic?label=pydantic) ![HTTPX](https://img.shields.io/pypi/v/httpx?label=httpx) ![prometheus_client](https://img.shields.io/pypi/v/prometheus_client?label=prometheus_client)
 
 ## Quick Start
