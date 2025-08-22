@@ -151,23 +151,13 @@ metrics-down: ## Stop Prometheus+Grafana
 	docker compose -f compose.metrics.yml down -v
 
 version: ## Print project version
-	@$(PY) - << 'PY'
-from src.version import __version__
-print(__version__)
-PY
+	@$(PY) -c 'from src.version import __version__; print(__version__)'
 
 # Usage: make bump-version NEW=0.1.1
 bump-version: ## Bump version in src/version.py, README badge, and Dockerfile ARG
 	@if [ -z "$(NEW)" ]; then echo "Usage: make bump-version NEW=x.y.z"; exit 1; fi
 	@echo "[version] Bumping to $(NEW)"
-	@$(PY) - << PY
-from pathlib import Path
-import re
-p = Path('src/version.py')
-txt = p.read_text(encoding='utf-8')
-txt = re.sub(r"__version__\s*=\s*\"[^\"]+\"", f'__version__ = "$(NEW)"', txt)
-p.write_text(txt, encoding='utf-8')
-PY
+	@sed -i.bak -E 's/^__version__\s*=\s*"[^"]+"/__version__ = "$(NEW)"/' src/version.py && rm -f src/version.py.bak
 	@sed -i.bak -E "s|(badge/version-)[0-9]+\.[0-9]+\.[0-9]+|\1$(NEW)|" README.md && rm -f README.md.bak
 	@sed -i.bak -E "s/^ARG VERSION=.*/ARG VERSION=$(NEW)/" Dockerfile && rm -f Dockerfile.bak
 	@git add src/version.py README.md Dockerfile && git commit -m "chore(version): bump to $(NEW)"
