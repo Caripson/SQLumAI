@@ -1,7 +1,7 @@
 # SQLumAI
 [![CI](https://github.com/Caripson/SQLumAI/actions/workflows/ci.yml/badge.svg)](https://github.com/Caripson/SQLumAI/actions)
 [![Release](https://img.shields.io/github/v/release/Caripson/SQLumAI?display_name=tag&sort=semver)](https://github.com/Caripson/SQLumAI/releases)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](#)
+[![Tag](https://img.shields.io/github/v/tag/Caripson/SQLumAI?sort=semver)](https://github.com/Caripson/SQLumAI/tags)
 [![Python](https://img.shields.io/badge/Python-3.10%20|%203.11%20|%203.12-3776AB?logo=python&logoColor=white)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
