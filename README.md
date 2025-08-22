@@ -15,6 +15,7 @@
   <br/>
   <sub>Developed by Johan Caripson</sub>
   <br/>
+    <br/>
 </p>
 
 SQLumAI is an invisible, AI‑powered proxy for Microsoft SQL Server.
