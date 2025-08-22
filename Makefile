@@ -3,11 +3,11 @@ SHELL := /bin/bash
 PY ?= python3
 PIP ?= pip3
 
-.PHONY: help setup dev test fmt lint coverage clean clean-all clean-reports clean-metrics version bump-version tag-release
+.PHONY: help setup dev test fmt lint coverage clean clean-all clean-reports clean-metrics version bump-version tag-release release
 
 help: ## Show common targets
 	@echo "Targets: setup, dev, test, test-85, test-90, fmt, lint, coverage, validate-rules, report-dryrun, simulate, docs-serve, llm-pull, integration-up, integration-up-ci, integration-down, metrics-up, metrics-down, clean, clean-all"
- 	@echo "Version: version, bump-version NEW=x.y.z, tag-release"
+	@echo "Version: version, bump-version NEW=x.y.z, tag-release, release NEW=x.y.z"
 
 setup: ## Install dependencies across supported stacks
 	@echo "[setup] Installing dependencies (best-effort)..."
@@ -177,3 +177,9 @@ tag-release: ## Create and push git tag v<version> from src/version.py
 	@v=$$($(PY) -c 'from src.version import __version__; print(__version__)'); \
 	echo "Tagging v$$v"; \
 	git tag -a v$$v -m "v$$v" && git push origin v$$v
+
+# Usage: make release NEW=0.1.1 – bump version and tag
+release: ## Bump version and create tag v<version>
+	@if [ -z "$(NEW)" ]; then echo "Usage: make release NEW=x.y.z"; exit 1; fi
+	$(MAKE) bump-version NEW=$(NEW)
+	$(MAKE) tag-release

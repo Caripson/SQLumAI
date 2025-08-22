@@ -164,7 +164,7 @@ def metrics_html(limit: int = 50):
         {rows}
       </table>
       <hr/>
-      <p style="color:#666;font-size:12px;">SQLumAI version {__version__}</p>
+      <p style="color:#666;font-size:12px;">SQLumAI version {__version__}. Developed by Johan Caripson.</p>
     </body></html>
     """
     return html
@@ -214,7 +214,12 @@ def insights_html():
         else:
             lines.append(f"<p>{html.escape(ln)}</p>")
     body = "\n".join(lines)
-    html_doc = f"<html><body>{body}<hr/><p><a href='/rules'>Rules</a></p></body></html>"
+    html_doc = (
+        f"<html><body>{body}<hr/>"
+        f"<p style=\"color:#666;font-size:12px;\">SQLumAI version {__version__}. Developed by Johan Caripson.</p>"
+        f"<p><a href='/rules'>Rules</a></p>"
+        f"</body></html>"
+    )
     return Response(content=html_doc, media_type="text/html")
 
 
@@ -252,6 +257,8 @@ def dryrun_html(rule: str | None = None, action: str | None = None, date: str | 
         <tr><th>Rule</th><th>Counts by Action</th></tr>
         {rows}
       </table>
+      <hr/>
+      <p style="color:#666;font-size:12px;">SQLumAI version {__version__}. Developed by Johan Caripson.</p>
     </body></html>
     """
     return html

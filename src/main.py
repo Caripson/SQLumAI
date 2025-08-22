@@ -17,7 +17,7 @@ from src.runtime.scheduler import run_scheduler
 async def main() -> None:
     load_dotenv()
     # Startup log with version for visibility
-    print(f"[sqlumai] starting version {__version__}")
+    print(f"[sqlumai] starting version {__version__} – Developed by Johan Caripson")
     listen_host = os.getenv("PROXY_LISTEN_ADDR", "0.0.0.0")
     listen_port = int(os.getenv("PROXY_LISTEN_PORT", "61433"))
     sql_host = os.getenv("SQL_HOST", "localhost")

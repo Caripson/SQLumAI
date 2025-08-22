@@ -16,6 +16,8 @@ COPY . .
 LABEL org.opencontainers.image.title="SQLumAI" \
       org.opencontainers.image.description="AI-powered SQL Server proxy and data quality assistant" \
       org.opencontainers.image.version=${VERSION} \
+      org.opencontainers.image.authors="Johan Caripson" \
+      org.opencontainers.image.vendor="Johan Caripson" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.source="https://github.com/Caripson/SQLumAI"
 
