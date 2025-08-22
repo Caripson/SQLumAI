@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 # Project version for labels; override with --build-arg VERSION=x.y.z
-ARG VERSION=0.1.0
+ARG VERSION=0.1.1
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
