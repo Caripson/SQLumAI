@@ -55,12 +55,19 @@ def main():
     # Optional: compute simple null-ratio drift if previous snapshot is available
     prev_path = PROFILES.with_name("field_profiles.prev.json")
     if prev_path.exists():
-        from scripts.drift_utils import compute_null_drift
-        prev_raw = json.loads(prev_path.read_text())
-        prev_profiles = prev_raw.get("profiles", prev_raw) if isinstance(prev_raw, dict) else {}
-        drifts = compute_null_drift(prev_profiles, profiles, threshold=0.1)[:10]
-        for field, delta in drifts:
-            lines.append(f"- {field}: null_ratio drift {delta:.2f}")
+        try:
+            # Prefer active module; fall back to archived copy if present
+            try:
+                from scripts.drift_utils import compute_null_drift  # type: ignore
+            except Exception:
+                from scripts.archive.drift_utils import compute_null_drift  # type: ignore
+            prev_raw = json.loads(prev_path.read_text())
+            prev_profiles = prev_raw.get("profiles", prev_raw) if isinstance(prev_raw, dict) else {}
+            drifts = compute_null_drift(prev_profiles, profiles, threshold=0.1)[:10]
+            for field, delta in drifts:
+                lines.append(f"- {field}: null_ratio drift {delta:.2f}")
+        except Exception:
+            lines.append("- Drift calc unavailable (missing utils or invalid previous snapshot).")
     else:
         lines.append("- TODO: compute PSI/KL and error trends once enough history is available.")
 

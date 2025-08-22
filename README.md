@@ -72,6 +72,7 @@ Docs
 - Metrics dashboard: `docs/metrics-dashboard.md`
  - High availability: `docs/ha.md`
 - Test strategy: `docs/test-strategy.md`
+ - Helper scripts: `scripts/README.md`
 
 ## Nightly Scheduler (example)
 Set these in your `.env` or environment to run the full pipeline hourly (or nightly by setting a longer interval):

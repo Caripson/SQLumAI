@@ -3,10 +3,10 @@ SHELL := /bin/bash
 PY ?= python3
 PIP ?= pip3
 
-.PHONY: help setup dev test fmt lint coverage clean
+.PHONY: help setup dev test fmt lint coverage clean clean-all clean-reports clean-metrics
 
 help: ## Show common targets
-	@echo "Targets: setup, dev, test, test-85, test-90, fmt, lint, coverage, validate-rules, report-dryrun, simulate, docs-serve, llm-pull, integration-up, integration-up-ci, integration-down, metrics-up, metrics-down, clean"
+	@echo "Targets: setup, dev, test, test-85, test-90, fmt, lint, coverage, validate-rules, report-dryrun, simulate, docs-serve, llm-pull, integration-up, integration-up-ci, integration-down, metrics-up, metrics-down, clean, clean-all"
 
 setup: ## Install dependencies across supported stacks
 	@echo "[setup] Installing dependencies (best-effort)..."
@@ -77,9 +77,22 @@ coverage: ## Print coverage if available (Python/Go)
 		go test ./... -cover; \
 	else echo "- Skipping Go coverage"; fi
 
-clean: ## Remove caches and build artifacts
+clean: ## Remove caches and generated artifacts (keeps dirs)
 	@echo "[clean] Cleaning artifacts..."
-	@rm -rf .pytest_cache __pycache__ dist build .coverage coverage htmlcov || true
+	@# Common caches and build outputs
+	@rm -rf .pytest_cache **/__pycache__ .ruff_cache .mypy_cache dist build .coverage coverage htmlcov || true
+	@# Generated outputs
+	@rm -rf reports/* data/metrics/* || true
+
+clean-reports: ## Remove generated reports/*
+	@rm -rf reports/* || true
+
+clean-metrics: ## Remove generated data/metrics/*
+	@rm -rf data/metrics/* || true
+
+clean-all: ## Aggressive clean, also removes output directories
+	@echo "[clean] Removing output directories (reports, data/metrics)..."
+	@rm -rf reports data/metrics || true
 
 validate-rules: ## Validate config/rules.json against API schema
 	@echo "[validate-rules] Validating rules..."
